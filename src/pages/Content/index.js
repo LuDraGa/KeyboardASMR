@@ -1,6 +1,7 @@
-import { printLine } from './modules/print';
+document.addEventListener('keydown', function () {
 
-console.log('Content script works!');
-console.log('Must reload extension for modifications to take effect.');
-
-printLine("Using the 'printLine' function from the Print Module");
+    // const x = chrome.runtime.getURL('assets/sounds/');
+    console.log("Hi")
+    const audio = new Audio(chrome.runtime.getURL('assets/sounds/typewriter/key-press.wav'));
+    audio.play();
+});

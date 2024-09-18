@@ -10,9 +10,6 @@
     "default_popup": "popup.html",
     "default_icon": "icon-34.png"
   },
-  "chrome_url_overrides": {
-    "newtab": "newtab.html"
-  },
   "icons": {
     "128": "icon-128.png"
   },
@@ -36,10 +33,13 @@
     {
       "resources": [
         "content.styles.css",
+        "assets/sounds/typewriter/key-press.wav",
         "icon-128.png",
         "icon-34.png"
       ],
-      "matches": []
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }
