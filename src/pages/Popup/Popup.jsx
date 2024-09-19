@@ -1,39 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import logo from '../../assets/img/logo.svg';
-import Greetings from '../../containers/Greetings/Greetings';
 import './Popup.css';
 
 const Popup = () => {
-  const [soundSet, setSoundSet] = useState('typewriter');
+  const [soundSet, setSoundSet] = useState('medium');
+  const [volume, setVolume] = useState(70); // Default volume is 70%
 
   useEffect(() => {
-    chrome.storage.sync.get(['soundSet'], (result) => {
+    chrome.storage.sync.get(['soundSet', 'volume'], (result) => {
       if (result.soundSet) {
         setSoundSet(result.soundSet);
+      }
+      if (result.volume !== undefined) {
+        setVolume(result.volume);
       }
     });
   }, []);
 
-  const handleChange = (event) => {
-    const selectedSoundSet = event.target.value;
-    setSoundSet(selectedSoundSet);
-    chrome.storage.sync.set({ soundSet: selectedSoundSet });
-    console.log("selectedSoundSet")
-    console.log(selectedSoundSet)
+  const handleSoundSetChange = (event) => {
+    const newSoundSet = event.target.value;
+    setSoundSet(newSoundSet);
+    chrome.storage.sync.set({ soundSet: newSoundSet });
+  };
+
+  const handleVolumeChange = (event) => {
+    const newVolume = event.target.value;
+    setVolume(newVolume);
+    chrome.storage.sync.set({ volume: newVolume });
   };
 
   return (
-    <div className="App">
-      <h3>Keyboard Sound Extension Options</h3>
-      <label>
-        Select Sound Set:
-        <select value={soundSet} onChange={handleChange}>
+    <div className="popup-container">
+      <h3>Keyboard Sound Options</h3>
+
+      <div className="form-group">
+        <label>Select a Sound Profile:</label>
+        <select value={soundSet} onChange={handleSoundSetChange} className="dropdown">
           <option value="typewriter">Typewriter</option>
           <option value="soft">Keychron Red</option>
           <option value="medium">Keychron Brown</option>
           <option value="hard">Keychron Blue</option>
         </select>
-      </label>
+      </div>
+
+      <div className="form-group">
+        <label>Sound Volume: {volume}%</label>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={volume}
+          onChange={handleVolumeChange}
+          className="volume-slider"
+        />
+      </div>
     </div>
   );
 };

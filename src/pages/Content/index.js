@@ -1,7 +1,16 @@
-chrome.storage.sync.get(['soundSet'], (result) => {
-    const soundSet = result.soundSet || 'default';
+let currentSoundSet;
+let volume = 0.7; // Default volume is 70%
 
-    // Default sound files for each sound set
+// Load the initial soundSet and volume
+chrome.storage.sync.get(['soundSet', 'volume'], (result) => {
+    const soundSet = result.soundSet || 'medium'; // Default to medium if undefined
+    volume = result.volume !== undefined ? result.volume / 100 : 0.7;
+
+    currentSoundSet = getSoundConfig(soundSet);
+});
+
+// Function to get the sound configuration for the current sound set
+function getSoundConfig(soundSet) {
     const soundConfig = {
         typewriter: {
             default: 'assets/sounds/typewriter/key-press.wav',
@@ -17,13 +26,28 @@ chrome.storage.sync.get(['soundSet'], (result) => {
             default: 'assets/sounds/keyboard/hard.wav',
         }
     };
+    return soundConfig[soundSet];
+}
 
-    // Fallback to 'default' sound if no specific key sound is found
-    const currentSoundSet = soundConfig[soundSet] || soundConfig['typewriter']; // Fallback to 'typewriter' if not found
+// Listen for storage changes (i.e., when the user updates soundSet or volume)
+chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'sync') {
+        if (changes.soundSet) {
+            currentSoundSet = getSoundConfig(changes.soundSet.newValue);
+        }
+        if (changes.volume) {
+            volume = changes.volume.newValue / 100; // Update volume dynamically
+        }
+    }
+});
 
-    document.addEventListener('keydown', (event) => {
-        let soundFile = currentSoundSet[event.key] || currentSoundSet.default;
-        const audio = new Audio(chrome.runtime.getURL(soundFile));
-        audio.play();
-    });
+// Play the appropriate sound based on keypress
+document.addEventListener('keydown', (event) => {
+    let soundFile = currentSoundSet[event.key] || currentSoundSet.default;
+    if (soundFile) {
+        const audioFileURL = chrome.runtime.getURL(soundFile);
+        const audio = new Audio(audioFileURL);
+        audio.volume = volume; // Apply the current volume
+        audio.play().catch((error) => console.error(`Failed to play ${event.key} sound:`, error));
+    }
 });

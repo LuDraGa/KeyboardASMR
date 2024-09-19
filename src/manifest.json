@@ -13,6 +13,9 @@
   "icons": {
     "128": "icon-128.png"
   },
+  "permissions": [
+    "storage"
+  ],
   "content_scripts": [
     {
       "matches": [
@@ -25,7 +28,8 @@
       ],
       "css": [
         "content.styles.css"
-      ]
+      ],
+      "run_at": "document_idle"
     }
   ],
   "devtools_page": "devtools.html",
@@ -33,7 +37,7 @@
     {
       "resources": [
         "content.styles.css",
-        "assets/sounds/typewriter/key-press.wav",
+        "assets/sounds/*/*",
         "icon-128.png",
         "icon-34.png"
       ],
