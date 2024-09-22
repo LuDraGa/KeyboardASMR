@@ -6,7 +6,8 @@
 
 **Suggestions for Improvement:**
 
-- **Add Eye-Catching Visuals:** Incorporate images or icons to make the extension more appealing.
-- **Highlight Unique Features:** Mention any exclusive sounds or customization options that set your extension apart.
-- **Include a Call to Action:** Use phrases like "Join thousands of users" or "Limited-time offer" to boost engagement.
-- **Keep It Concise and Impactful:** Use powerful adjectives and action verbs to maintain interest without overwhelming the reader.
+- **More keyboard and key types sounds:** Make available for more keyboards(how?), and key-type sounds(where to find?)
+- **Add Themes with bgm:** Like mellow, rain, whitenoise, etc
+- **Add more sounds and key customizations:** Unique key sounds, individual key/key-category to sound(wasd, arrow_keys, numbers, alpha, symbols, enter, delete, etc)
+- **Multiple presets:** Let users save multiple presets.
+- **Maybe a themes curation:** A small collection can be made as default options: glass keys, keyboard/piano, guitar, drums, chips, electricity, etc.
