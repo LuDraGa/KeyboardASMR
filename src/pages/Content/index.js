@@ -2,6 +2,7 @@ let currentSoundSet;
 let volume = 0.7; // Default volume is 70%
 let audioCtx = new (window.AudioContext || window.webkitAudioContext)(); // Create a single AudioContext
 let oscillators = {}; // Store oscillators for each key
+let activeKeys = {};  // Track which keys are actively being pressed
 
 // Load the initial soundSet and volume
 chrome.storage.sync.get(['soundSet', 'volume'], (result) => {
@@ -37,24 +38,24 @@ const keyToTone = {
     K: tone.C[5],  // C5
     L: tone.D[5],  // D5
 
-    Q: tone.E[5],  // E5
-    W: tone.F[5],  // F5
-    E: tone.G[5],  // G5
-    R: tone.A[5],  // A5
-    T: tone.B[5],  // B5
-    Y: tone.C[6],  // C6
-    U: tone.D[6],  // D6
-    I: tone.E[6],  // E6
-    O: tone.F[6],  // F6
-    P: tone.G[6],  // G6
+    Q: tone.Db[4], // C#4
+    W: tone.Eb[4], // D#4
+    E: tone.Gb[4], // F#4
+    R: tone.Ab[4], // G#4
+    T: tone.Bb[4], // A#4
+    Y: tone.Db[5], // C#5
+    U: tone.Eb[5], // D#5
+    I: tone.Gb[5], // F#5
+    O: tone.Ab[5], // G#5
+    P: tone.Bb[5], // A#5
 
-    Z: tone.A[3],  // A3
-    X: tone.B[3],  // B3
-    C: tone.C[4],  // C4
-    V: tone.D[4],  // D4
-    B: tone.E[4],  // E4
-    N: tone.F[4],  // F4
-    M: tone.G[4],  // G4
+    Z: tone.C[3],  // C3
+    X: tone.D[3],  // D3
+    C: tone.E[3],  // E3
+    V: tone.F[3],  // F3
+    B: tone.G[3],  // G3
+    N: tone.A[3],  // A3
+    M: tone.B[3],  // B3
 };
 
 function getMusicalConfig() {
@@ -69,7 +70,7 @@ function getSoundConfig(soundSet) {
     const soundConfig = {
         typewriter: {
             default: 'assets/sounds/typewriter/key-press.wav',
-            Enter: 'assets/sounds/typewriter/enter-key.wav',
+            Enter: 'assets/sounds/typewriter/enter-key.wav', // Special sound for Enter
         },
         soft: {
             default: 'assets/sounds/keyboard/soft.wav',
@@ -85,42 +86,49 @@ function getSoundConfig(soundSet) {
     return soundConfig[soundSet];
 }
 
-// Listen for storage changes (i.e., when the user updates soundSet or volume)
-chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'sync') {
-        if (changes.soundSet) {
-            currentSoundSet = changes.soundSet.newValue;
-        }
-        if (changes.volume) {
-            volume = changes.volume.newValue / 100; // Update volume dynamically
-        }
+// Stop all currently playing sounds as a fallback mechanism
+function stopAllSounds() {
+    for (let key in oscillators) {
+        stopTone(key);
     }
-});
+}
 
 // Play the appropriate sound based on keypress
 document.addEventListener('keydown', (event) => {
-    if (currentSoundSet && !oscillators[event.key]) {
+    // Stop all sounds if keyup event is missed
+    stopAllSounds();
+
+    // Only handle the key if it's not already being processed (avoid repeated triggers)
+    if (currentSoundSet && !activeKeys[event.key]) {
         const soundConfig = getSoundConfig(currentSoundSet);
-        let soundFileOrFreq = soundConfig[event.key.toUpperCase()] ?? soundConfig["default"];
+        let soundFileOrFreq = soundConfig[event.key] || soundConfig[event.key.toUpperCase()] || soundConfig["default"];
 
         if (currentSoundSet == "musical") {
             playTone(soundFileOrFreq, event.key);
         } else {
+            // Handle the Enter key separately for typewriter sound set
+            if (event.key === 'Enter' && soundConfig.Enter) {
+                soundFileOrFreq = soundConfig.Enter;
+            }
             const audioFileURL = chrome.runtime.getURL(soundFileOrFreq);
             const audio = new Audio(audioFileURL);
-            audio.volume = volume;
+            audio.volume = volume * 0.7; // Slightly reduce volume for non-musical sounds to avoid distortion
             audio.play().catch((error) => console.error(`Failed to play ${event.key} sound:`, error));
         }
+        activeKeys[event.key] = true; // Mark key as active
     }
 });
 
 document.addEventListener('keyup', (event) => {
-    if (currentSoundSet === "musical" && oscillators[event.key]) {
-        stopTone(event.key); // Stop the tone when the key is released
+    if (activeKeys[event.key]) {
+        if (currentSoundSet === "musical" && oscillators[event.key]) {
+            stopTone(event.key); // Stop the tone when the key is released
+        }
+        delete activeKeys[event.key]; // Mark key as inactive
     }
 });
 
-// Function to play a tone at a specific frequency
+// Function to play a tone at a specific frequency (support multiple notes)
 function playTone(frequency, key) {
     const gainNode = audioCtx.createGain();
     const oscillator = audioCtx.createOscillator();
@@ -129,7 +137,7 @@ function playTone(frequency, key) {
     oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime); // Set the frequency to play the correct note
 
     gainNode.gain.setValueAtTime(0, audioCtx.currentTime); // Start with volume at 0
-    gainNode.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + 0.05); // Fade in over 50ms
+    gainNode.gain.linearRampToValueAtTime(volume * 0.7, audioCtx.currentTime + 0.05); // Slightly lower volume, fade in over 50ms to avoid harsh attacks
 
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
