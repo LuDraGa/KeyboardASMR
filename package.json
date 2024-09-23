@@ -1,6 +1,6 @@
 {
-  "name": "chrome-extension-keyboard-asmr",
-  "version": "5.0.4",
+  "name": "keyboard-asmr",
+  "version": "6.0.1",
   "description": "A chrome extension to explore your keyboard asmr",
   "license": "MIT",
   "repository": {

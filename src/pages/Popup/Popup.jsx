@@ -39,6 +39,7 @@ const Popup = () => {
           <option value="soft">Keychron Red</option>
           <option value="medium">Keychron Brown</option>
           <option value="hard">Keychron Blue</option>
+          <option value="musical">Musical</option>
         </select>
       </div>
 
