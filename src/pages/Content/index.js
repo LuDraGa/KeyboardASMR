@@ -1,10 +1,12 @@
 let currentSoundSet;
 let volume = 0.7; // Default volume is 70%
+let isMuted = false
 
 // Load the initial soundSet and volume
-chrome.storage.sync.get(['soundSet', 'volume'], (result) => {
+chrome.storage.sync.get(['soundSet', 'volume', 'isMuted'], (result) => {
     const soundSet = result.soundSet || 'medium'; // Default to medium if undefined
     volume = result.volume !== undefined ? result.volume / 100 : 0.7;
+    isMuted = result.isMuted ?? false;
 
     currentSoundSet = getSoundConfig(soundSet);
 });
@@ -38,13 +40,17 @@ chrome.storage.onChanged.addListener((changes, area) => {
         if (changes.volume) {
             volume = changes.volume.newValue / 100; // Update volume dynamically
         }
+        if (changes.isMuted) {
+            isMuted = changes.isMuted.newValue; // Update volume dynamically
+        }
+
     }
 });
 
 // Play the appropriate sound based on keypress
 document.addEventListener('keydown', (event) => {
     let soundFile = currentSoundSet[event.key] || currentSoundSet.default;
-    if (soundFile) {
+    if (soundFile && !isMuted) {
         const audioFileURL = chrome.runtime.getURL(soundFile);
         const audio = new Audio(audioFileURL);
         audio.volume = volume; // Apply the current volume

@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Chrome Extension - Keyboard ASMR",
+  "name": "Keyboard ASMR",
   "description": "A chrome extension built with React 17, Webpack 5, and Webpack Dev Server 4 for serving your keyboard asmr needs",
   "background": {
     "service_worker": "background.bundle.js"
