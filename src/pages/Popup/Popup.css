@@ -1,20 +1,38 @@
 .popup-container {
   padding: 20px;
   font-family: Arial, sans-serif;
-  color: #fff;
-  background-color: #2c2f33;
   border-radius: 2px;
   width: 300px;
-  height: 220px
+  height: 220px;
+}
+
+/* Dark mode */
+.popup-container.dark {
+  background-color: #2c2f33;
+  color: #fff;
+}
+
+/* Light mode */
+.popup-container.light {
+  background-color: #f5f5f5;
+  color: #000;
 }
 
 h3 {
   margin-bottom: 20px;
+  padding: 0;
+  margin-right: 2px;
   font-size: 18px;
 }
 
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   margin-right: 30px;
 }
 
@@ -32,4 +50,38 @@ input[type="file"] {
   margin-bottom: 10px;
   border-radius: 4px;
   border: 1px solid #ccc;
+}
+
+.volume-slider {
+  width: 100%;
+}
+
+.mute-button {
+  padding: 6px 12px;
+  margin-top: 10px;
+  border-radius: 4px;
+  background-color: #7289da;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.mute-button:hover {
+  background-color: #5a6abf;
+}
+
+.theme-toggle-button {
+  background: none;
+  border: none;
+  font-size: 15px;
+  /* Adjust the size of the icon as needed */
+  cursor: pointer;
+  color: inherit;
+  /* Ensure the icon color matches the current theme */
+  padding: 0;
+}
+
+.theme-toggle-button:focus {
+  outline: none;
+  /* Remove any focus outline */
 }
