@@ -1,4 +1,4 @@
-🔥 Elevate Your Typing Game! 🔥**
+🔥 Elevate Your Typing Game! 🔥\*\*
 
 - **Download now on the Chrome Web Store—don't miss out!**
 - **Instantly customize your keyboard sounds to match your style and vibe.**

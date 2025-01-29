@@ -12,36 +12,19 @@
   "icons": {
     "128": "icon-128.png"
   },
-  "permissions": [
-    "storage"
-  ],
+  "permissions": ["storage"],
   "content_scripts": [
     {
-      "matches": [
-        "http://*/*",
-        "https://*/*",
-        "<all_urls>"
-      ],
-      "js": [
-        "contentScript.bundle.js"
-      ],
-      "css": [
-        "content.styles.css"
-      ],
+      "matches": ["http://*/*", "https://*/*", "<all_urls>"],
+      "js": ["contentScript.bundle.js"],
+      "css": ["content.styles.css"],
       "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": [
-        "content.styles.css",
-        "assets/sounds/*/*",
-        "icon-128.png",
-        "icon-34.png"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
+      "resources": ["content.styles.css", "assets/sounds/*/*", "icon-128.png", "icon-34.png"],
+      "matches": ["<all_urls>"]
     }
   ]
 }
