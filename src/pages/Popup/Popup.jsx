@@ -44,12 +44,12 @@ const Popup = () => {
   return (
     <div className={`popup-container ${theme}`}>
       <div className="header">
-        <h3>Keyboard Sound Options &nbsp;
+        <h3>
+          Keyboard Sound Options &nbsp;
           <button onClick={toggleTheme} className="theme-toggle-button">
             {theme === 'dark' ? <FaSun /> : <FaMoon />}
           </button>
         </h3>
-
       </div>
 
       <div className="form-group">
@@ -63,9 +63,12 @@ const Popup = () => {
       </div>
 
       <div className="form-group">
-        <label>Sound Volume: {volume}% <button onClick={toggleMute} className="mute-button">
-          {isMuted ? 'Unmute' : 'Mute'}
-        </button></label>
+        <label>
+          Sound Volume: {volume}%{' '}
+          <button onClick={toggleMute} className="mute-button">
+            {isMuted ? 'Unmute' : 'Mute'}
+          </button>
+        </label>
 
         <input
           type="range"
@@ -77,9 +80,6 @@ const Popup = () => {
           disabled={isMuted}
         />
       </div>
-
-
-
     </div>
   );
 };
