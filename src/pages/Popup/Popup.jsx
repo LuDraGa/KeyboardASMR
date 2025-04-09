@@ -8,7 +8,7 @@ const soundSetOptions = [
   { value: 'soft', label: 'Keychron Red' },
   { value: 'medium', label: 'Keychron Brown' },
   { value: 'hard', label: 'Keychron Blue' },
-  // { value: 'soft', label: 'Beats' },
+  { value: 'drum', label: 'Beats' },
   // { value: 'soft', label: 'Lofi' },
   // { value: 'soft', label: 'Harmonica' },
 ];
