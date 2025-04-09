@@ -34,9 +34,10 @@ var options = {
     contentScript: path.join(__dirname, 'src', 'pages', 'Content', 'index.js'),
     // devtools: path.join(__dirname, 'src', 'pages', 'Devtools', 'index.js'),
     panel: path.join(__dirname, 'src', 'pages', 'Panel', 'index.jsx'),
+    offscreen: path.join(__dirname, 'src', 'pages', 'Offscreen', 'index.js'),
   },
   chromeExtensionBoilerplate: {
-    notHotReload: ['background', 'contentScript', 'devtools'],
+    notHotReload: ['background', 'contentScript', 'devtools', 'offscreen'],
   },
   output: {
     filename: '[name].bundle.js',
@@ -103,6 +104,7 @@ var options = {
           {
             loader: require.resolve('babel-loader'),
             options: {
+              presets: ['@babel/preset-env', '@babel/preset-react'],
               plugins: [isDevelopment && require.resolve('react-refresh/babel')].filter(Boolean),
             },
           },
@@ -170,6 +172,15 @@ var options = {
     new CopyWebpackPlugin({
       patterns: [
         {
+          from: 'src/assets/img/icon-34-disabled.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+      ],
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
           from: 'src/assets/sounds',
           to: path.join(__dirname, 'build/assets/sounds'),
           force: true,
@@ -205,6 +216,15 @@ var options = {
       filename: 'panel.html',
       chunks: ['panel'],
       cache: false,
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: 'src/pages/Offscreen/offscreen.html',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+      ],
     }),
   ].filter(Boolean),
   infrastructureLogging: {

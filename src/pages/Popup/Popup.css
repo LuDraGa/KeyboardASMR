@@ -85,3 +85,14 @@ input[type='file'] {
   outline: none;
   /* Remove any focus outline */
 }
+
+.shortcut-info {
+  margin-top: 15px;
+  text-align: center;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.shortcut-info small {
+  color: inherit;
+}

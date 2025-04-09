@@ -10,20 +10,39 @@
     "default_icon": "icon-34.png"
   },
   "icons": {
-    "128": "icon-128.png"
+    "128": "icon-128.png",
+    "34": "icon-34.png"
   },
-  "permissions": ["storage"],
+  "permissions": ["storage", "commands", "offscreen"],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+B",
+        "mac": "Command+B"
+      },
+      "description": "Toggle keyboard sounds"
+    }
+  },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*", "<all_urls>"],
+      "matches": ["<all_urls>"],
       "js": ["contentScript.bundle.js"],
       "css": ["content.styles.css"],
+      "all_frames": true,
       "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["content.styles.css", "assets/sounds/*/*", "icon-128.png", "icon-34.png"],
+      "resources": [
+        "content.styles.css",
+        "assets/sounds/*/*",
+        "icon-128.png",
+        "icon-128-disabled.png",
+        "icon-34.png",
+        "icon-34-disabled.png",
+        "offscreen.html"
+      ],
       "matches": ["<all_urls>"]
     }
   ]
