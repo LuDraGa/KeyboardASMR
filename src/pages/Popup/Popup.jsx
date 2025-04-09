@@ -1,44 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import './Popup.css';
 import { FaSun, FaMoon } from 'react-icons/fa'; // Import icons
+import { DEFAULT_SETTINGS, MESSAGE_TYPES, STORAGE_KEYS } from '../../shared/config';
+
+const soundSetOptions = [
+  { value: 'typewriter', label: 'Typewriter' },
+  { value: 'soft', label: 'Keychron Red' },
+  { value: 'medium', label: 'Keychron Brown' },
+  { value: 'hard', label: 'Keychron Blue' },
+  // { value: 'soft', label: 'Beats' },
+  // { value: 'soft', label: 'Lofi' },
+  // { value: 'soft', label: 'Harmonica' },
+];
 
 const Popup = () => {
-  const [soundSet, setSoundSet] = useState('medium');
-  const [volume, setVolume] = useState(70); // Default volume is 70%
-  const [isMuted, setIsMuted] = useState(false);
+  const [soundSet, setSoundSet] = useState(DEFAULT_SETTINGS.soundSet);
+  const [volume, setVolume] = useState(DEFAULT_SETTINGS.volume * 100);
+  const [isMuted, setIsMuted] = useState(DEFAULT_SETTINGS.isMuted);
   const [theme, setTheme] = useState('dark');
 
   useEffect(() => {
-    chrome.storage.sync.get(['soundSet', 'volume', 'isMuted', 'theme'], (result) => {
-      if (result.soundSet) setSoundSet(result.soundSet);
-      if (result.volume !== undefined) setVolume(result.volume);
-      if (result.isMuted !== undefined) setIsMuted(result.isMuted);
-      if (result.theme) setTheme(result.theme);
+    chrome.storage.sync.get([
+      STORAGE_KEYS.SOUND_SET,
+      STORAGE_KEYS.VOLUME,
+      STORAGE_KEYS.IS_MUTED,
+      STORAGE_KEYS.THEME
+    ], (result) => {
+      if (result[STORAGE_KEYS.SOUND_SET]) setSoundSet(result[STORAGE_KEYS.SOUND_SET]);
+      if (result[STORAGE_KEYS.VOLUME] !== undefined) setVolume(result[STORAGE_KEYS.VOLUME]);
+      if (result[STORAGE_KEYS.IS_MUTED] !== undefined) setIsMuted(result[STORAGE_KEYS.IS_MUTED]);
+      if (result[STORAGE_KEYS.THEME]) setTheme(result[STORAGE_KEYS.THEME]);
     });
   }, []);
 
   const handleSoundSetChange = (event) => {
     const newSoundSet = event.target.value;
     setSoundSet(newSoundSet);
-    chrome.storage.sync.set({ soundSet: newSoundSet });
+    chrome.storage.sync.set({ [STORAGE_KEYS.SOUND_SET]: newSoundSet });
   };
 
   const handleVolumeChange = (event) => {
-    const newVolume = event.target.value;
+    const newVolume = parseInt(event.target.value, 10);
     setVolume(newVolume);
-    chrome.storage.sync.set({ volume: newVolume });
+    chrome.storage.sync.set({ [STORAGE_KEYS.VOLUME]: newVolume });
   };
 
   const toggleMute = () => {
     const muteState = !isMuted;
     setIsMuted(muteState);
-    chrome.storage.sync.set({ isMuted: muteState });
+    chrome.storage.sync.set({ [STORAGE_KEYS.IS_MUTED]: muteState });
+    // Notify background script about mute toggle
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.TOGGLE_MUTE,
+      isMuted: muteState
+    });
   };
 
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
-    chrome.storage.sync.set({ theme: newTheme });
+    chrome.storage.sync.set({ [STORAGE_KEYS.THEME]: newTheme });
   };
 
   return (
@@ -55,10 +76,11 @@ const Popup = () => {
       <div className="form-group">
         <label>Select a Sound Profile:</label>
         <select value={soundSet} onChange={handleSoundSetChange} className="dropdown">
-          <option value="typewriter">Typewriter</option>
-          <option value="soft">Keychron Red</option>
-          <option value="medium">Keychron Brown</option>
-          <option value="hard">Keychron Blue</option>
+          {soundSetOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -79,6 +101,12 @@ const Popup = () => {
           className="volume-slider"
           disabled={isMuted}
         />
+      </div>
+
+      <div className="shortcut-info">
+        <small>
+          Tip: Use {navigator.platform.includes('Mac') ? '⌘+B' : 'Ctrl+B'} to quickly toggle to this menu
+        </small>
       </div>
     </div>
   );
