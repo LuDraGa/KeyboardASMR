@@ -3,6 +3,7 @@ export const SOUND_SETS = {
   typewriter: {
     default: 'assets/sounds/typewriter/key-press.wav',
     Enter: 'assets/sounds/typewriter/enter-key.wav',
+    Backspace: 'assets/sounds/typewriter/backspace-tyr.wav',
   },
   soft: {
     default: 'assets/sounds/keyboard/soft.wav',
@@ -14,8 +15,10 @@ export const SOUND_SETS = {
     default: 'assets/sounds/keyboard/hard.wav',
   },
   drum: {
-    default: 'assets/sounds/drum/kick.wav',
-    Enter: 'assets/sounds/drum/tom.wav',
+    default: 'assets/sounds/drum/snare1.wav',
+    Enter: 'assets/sounds/drum/kick1.wav',
+    Backspace: 'assets/sounds/drum/openSnare1.wav',
+    ' ': 'assets/sounds/drum/tom1.wav',
   },
 };
 
