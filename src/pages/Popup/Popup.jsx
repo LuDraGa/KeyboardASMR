@@ -12,21 +12,21 @@ const soundProfiles = [
   },
   {
     id: 'soft',
-    name: 'Red Switch',
+    name: 'Keychron Red',
     description: 'Soft & smooth',
     icon: '🔴',
     color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
   },
   {
     id: 'medium',
-    name: 'Brown Switch',
+    name: 'Keychron  Brown',
     description: 'Tactile bump',
     icon: '🟤',
     color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
   },
   {
     id: 'hard',
-    name: 'Blue Switch',
+    name: 'Keychron Blue',
     description: 'Clicky & loud',
     icon: '🔵',
     color: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
@@ -36,7 +36,7 @@ const soundProfiles = [
     name: 'Drum Kit',
     description: 'Beat maker',
     icon: '🥁',
-    color: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+    color: 'linear-gradient(135deg,rgb(145, 209, 206) 0%,rgb(11, 129, 123) 100%)',
   },
 ];
 
@@ -46,8 +46,6 @@ const Popup = () => {
   const [isMuted, setIsMuted] = useState(DEFAULT_SETTINGS.isMuted);
   const [theme, setTheme] = useState('dark');
   const [isPlaying, setIsPlaying] = useState(null);
-  const [showStats, setShowStats] = useState(false);
-  const [stats, setStats] = useState({ keystrokes: 0, wpm: 0, activeTime: '0m' });
   const audioContext = useRef(null);
   const soundBuffers = useRef({});
 
@@ -65,30 +63,9 @@ const Popup = () => {
       if (result[STORAGE_KEYS.THEME]) setTheme(result[STORAGE_KEYS.THEME]);
     });
 
-    // Load stats
-    loadStats();
-
     // Initialize audio context for preview
     initAudio();
   }, []);
-
-  const loadStats = async () => {
-    const today = new Date().toDateString();
-    const result = await chrome.storage.local.get(STORAGE_KEYS.DAILY_STATS);
-    const dailyStats = result[STORAGE_KEYS.DAILY_STATS] || {};
-    const todayStats = dailyStats[today] || { keystrokes: 0, peakWPM: 0, activeTime: 0 };
-    
-    // Format active time
-    const hours = Math.floor(todayStats.activeTime / 60);
-    const minutes = todayStats.activeTime % 60;
-    const activeTimeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-    
-    setStats({
-      keystrokes: todayStats.keystrokes.toLocaleString(),
-      wpm: todayStats.peakWPM,
-      activeTime: activeTimeStr
-    });
-  };
 
   const initAudio = async () => {
     try {
@@ -179,12 +156,6 @@ const Popup = () => {
           </div>
         </div>
         <div className="header-actions">
-          <button className="icon-btn" onClick={() => {
-            setShowStats(!showStats);
-            if (!showStats) loadStats(); // Refresh stats when opening
-          }} title="Statistics">
-            📊
-          </button>
           <button className="icon-btn" onClick={toggleTheme} title="Toggle theme">
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
@@ -257,35 +228,8 @@ const Popup = () => {
         </div>
       </div>
 
-      {/* Stats Panel (Hidden by default) */}
-      {showStats && (
-        <div className="stats-panel">
-          <h2>Today's Stats</h2>
-          <div className="stats-grid">
-            <div className="stat-card">
-              <span className="stat-value">{stats.keystrokes}</span>
-              <span className="stat-label">Keystrokes</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-value">{stats.wpm}</span>
-              <span className="stat-label">Peak WPM</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-value">{stats.activeTime}</span>
-              <span className="stat-label">Active Time</span>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Footer */}
       <div className="footer">
-        <div className="shortcut-hint">
-          <kbd>{navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}</kbd>
-          <span>+</span>
-          <kbd>B</kbd>
-          <span className="hint-text">to toggle mute</span>
-        </div>
       </div>
     </div>
   );

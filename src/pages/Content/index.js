@@ -114,93 +114,6 @@ function injectedFunction() {
   document.addEventListener('keydown', handleKeyboardEvent, true);
 }
 
-// Stats tracking
-let sessionStats = {
-  keystrokes: 0,
-  startTime: Date.now(),
-  lastKeyTime: Date.now(),
-  lastActiveTime: Date.now(),
-  totalActiveTime: 0,
-  keystrokesBuffer: [],
-  currentWPM: 0
-};
-
-// Calculate WPM from recent keystrokes
-function calculateWPM() {
-  const now = Date.now();
-  const oneMinuteAgo = now - 60000;
-  
-  // Filter keystrokes within the last minute
-  sessionStats.keystrokesBuffer = sessionStats.keystrokesBuffer.filter(time => time > oneMinuteAgo);
-  
-  if (sessionStats.keystrokesBuffer.length < 2) {
-    return 0;
-  }
-  
-  // Calculate WPM (average word = 5 characters)
-  const charactersTyped = sessionStats.keystrokesBuffer.length;
-  const words = charactersTyped / 5;
-  return Math.round(words);
-}
-
-// Update daily stats
-async function updateDailyStats() {
-  const today = new Date().toDateString();
-  const stats = await chrome.storage.local.get(STORAGE_KEYS.DAILY_STATS);
-  const dailyStats = stats[STORAGE_KEYS.DAILY_STATS] || {};
-  
-  if (!dailyStats[today]) {
-    dailyStats[today] = {
-      keystrokes: 0,
-      activeTime: 0,
-      peakWPM: 0
-    };
-  }
-  
-  dailyStats[today].keystrokes++;
-  sessionStats.keystrokes++;
-  
-  // Track active time
-  const currentTime = Date.now();
-  const timeSinceLastKey = currentTime - sessionStats.lastKeyTime;
-  
-  // If less than 5 seconds since last keystroke, consider it active time
-  if (timeSinceLastKey < 5000) {
-    const activeIncrement = Math.min(timeSinceLastKey, 5000) / 1000 / 60; // Convert to minutes
-    sessionStats.totalActiveTime += activeIncrement;
-  } else {
-    // Reset active time tracking after inactivity
-    sessionStats.lastActiveTime = currentTime;
-  }
-  
-  sessionStats.lastKeyTime = currentTime;
-  
-  // Add to keystroke buffer for WPM calculation
-  sessionStats.keystrokesBuffer.push(currentTime);
-  
-  // Calculate current WPM
-  const currentWPM = calculateWPM();
-  sessionStats.currentWPM = currentWPM;
-  
-  // Update peak WPM if current is higher
-  if (currentWPM > dailyStats[today].peakWPM) {
-    dailyStats[today].peakWPM = currentWPM;
-  }
-  
-  // Update active time in storage
-  dailyStats[today].activeTime = Math.round(sessionStats.totalActiveTime + (dailyStats[today].activeTime || 0));
-  
-  // Clean up old stats (keep only last 7 days)
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  Object.keys(dailyStats).forEach(date => {
-    if (new Date(date) < oneWeekAgo) {
-      delete dailyStats[date];
-    }
-  });
-  
-  await chrome.storage.local.set({ [STORAGE_KEYS.DAILY_STATS]: dailyStats });
-}
 
 // Listen for messages from injected script
 window.addEventListener('message', async (event) => {
@@ -218,9 +131,6 @@ window.addEventListener('message', async (event) => {
     if (!isMuted) {
       playSound(event.data.data.key);
     }
-    
-    // Update stats regardless of mute state
-    updateDailyStats();
     
     // Also notify background for icon updates (optional)
     chrome.runtime.sendMessage({
