@@ -230,6 +230,15 @@ const Popup = () => {
 
       {/* Footer */}
       <div className="footer">
+        <a 
+          href="https://chromewebstore.google.com/detail/keyboard-asmr/aebnkjebahjkkpiknggemolakkjggiab"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="review-link"
+        >
+          <span className="review-icon">⭐</span>
+          <span className="review-text">Enjoying Keyboard ASMR? Leave a review!</span>
+        </a>
       </div>
     </div>
   );

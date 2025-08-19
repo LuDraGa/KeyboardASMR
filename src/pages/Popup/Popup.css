@@ -461,7 +461,60 @@ body {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   justify-content: center;
+  align-items: center;
   flex-shrink: 0;
+}
+
+/* Review Link */
+.review-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: #ffffff;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  box-shadow: 0 0.15rem 0.5rem rgba(102, 126, 234, 0.3);
+}
+
+.review-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.25rem 0.75rem rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.review-icon {
+  font-size: 1rem;
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+.review-text {
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.popup-container.light .review-link {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  box-shadow: 0 0.15rem 0.5rem rgba(102, 126, 234, 0.3);
+}
+
+.popup-container.light .review-link:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  box-shadow: 0 0.25rem 0.75rem rgba(102, 126, 234, 0.4);
+}
+
+.popup-container.light .review-text {
+  color: #ffffff;
 }
 
 .shortcut-hint {
