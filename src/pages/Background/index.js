@@ -6,15 +6,8 @@ let currentSoundSet = DEFAULT_SETTINGS.soundSet;
 let volume = DEFAULT_SETTINGS.volume;
 let isMuted = DEFAULT_SETTINGS.isMuted;
 
-// Create the offscreen document if it doesn't exist
-async function createOffscreenDocument() {
-  if (await chrome.offscreen.hasDocument()) return;
-  await chrome.offscreen.createDocument({
-    url: 'offscreen.html',
-    reasons: ['AUDIO_PLAYBACK'],
-    justification: 'Playing keyboard sound effects',
-  });
-}
+// Offscreen document no longer needed - audio is handled in content script
+// Keeping this comment for reference of the old architecture
 
 // Update extension icon and state
 async function updateExtensionState() {
@@ -63,31 +56,12 @@ async function updateExtensionState() {
   }
 }
 
-// Play sound through the offscreen document
+// Note: Sound playing is now handled directly in content script for better performance
+// This function is kept for backwards compatibility but is no longer the primary method
 async function playSound(key) {
-  if (isMuted) return;
-
-  try {
-    await createOffscreenDocument();
-    // Get the offscreen document's tab
-    const offscreenClient = await chrome.runtime.getContexts({
-      contextTypes: ['OFFSCREEN_DOCUMENT'],
-    });
-
-    if (offscreenClient.length > 0) {
-      chrome.runtime.sendMessage({
-        target: 'offscreen',
-        type: MESSAGE_TYPES.PLAY_SOUND,
-        soundSet: currentSoundSet,
-        key: key,
-        volume: volume,
-      });
-    } else {
-      console.error('Offscreen document not found');
-    }
-  } catch (error) {
-    console.error('Failed to play sound:', error);
-  }
+  // Sound playing moved to content script for better performance
+  // This is now just a stub for any legacy code
+  return;
 }
 
 // Listen for keyboard events from content scripts
@@ -101,21 +75,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true;
 });
 
-// Listen for the keyboard command
-chrome.commands.onCommand.addListener((command) => {
-  if (command === '_execute_action') {
-    isMuted = !isMuted;
-    updateExtensionState();
-
-    // Show a notification
-    chrome.notifications.create({
-      type: 'basic',
-      iconUrl: isMuted ? 'icon-34-disabled.png' : 'icon-34.png',
-      title: 'Keyboard ASMR',
-      message: `Keyboard sounds ${isMuted ? 'disabled' : 'enabled'}`,
-    });
-  }
-});
 
 // Initialize settings
 chrome.storage.sync.get([STORAGE_KEYS.SOUND_SET, STORAGE_KEYS.VOLUME, STORAGE_KEYS.IS_MUTED], async (result) => {
@@ -123,8 +82,8 @@ chrome.storage.sync.get([STORAGE_KEYS.SOUND_SET, STORAGE_KEYS.VOLUME, STORAGE_KE
   volume = result[STORAGE_KEYS.VOLUME] !== undefined ? result[STORAGE_KEYS.VOLUME] / 100 : DEFAULT_SETTINGS.volume;
   isMuted = result[STORAGE_KEYS.IS_MUTED] ?? DEFAULT_SETTINGS.isMuted;
 
-  // Initialize offscreen document
-  await createOffscreenDocument();
+  // Offscreen document no longer needed as audio is handled in content script
+  // await createOffscreenDocument();
   updateExtensionState();
 });
 

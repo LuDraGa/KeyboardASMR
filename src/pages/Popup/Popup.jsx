@@ -1,16 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Popup.css';
-import { FaSun, FaMoon } from 'react-icons/fa'; // Import icons
-import { DEFAULT_SETTINGS, MESSAGE_TYPES, STORAGE_KEYS } from '../../shared/config';
+import { DEFAULT_SETTINGS, MESSAGE_TYPES, STORAGE_KEYS, SOUND_SETS } from '../../shared/config';
 
-const soundSetOptions = [
-  { value: 'typewriter', label: 'Typewriter' },
-  { value: 'soft', label: 'Keychron Red' },
-  { value: 'medium', label: 'Keychron Brown' },
-  { value: 'hard', label: 'Keychron Blue' },
-  { value: 'drum', label: 'Beats' },
-  // { value: 'soft', label: 'Lofi' },
-  // { value: 'soft', label: 'Harmonica' },
+const soundProfiles = [
+  {
+    id: 'typewriter',
+    name: 'Typewriter',
+    description: 'Classic mechanical',
+    icon: '⌨️',
+    color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  },
+  {
+    id: 'soft',
+    name: 'Red Switch',
+    description: 'Soft & smooth',
+    icon: '🔴',
+    color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  },
+  {
+    id: 'medium',
+    name: 'Brown Switch',
+    description: 'Tactile bump',
+    icon: '🟤',
+    color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  },
+  {
+    id: 'hard',
+    name: 'Blue Switch',
+    description: 'Clicky & loud',
+    icon: '🔵',
+    color: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+  },
+  {
+    id: 'drum',
+    name: 'Drum Kit',
+    description: 'Beat maker',
+    icon: '🥁',
+    color: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+  },
 ];
 
 const Popup = () => {
@@ -18,8 +45,14 @@ const Popup = () => {
   const [volume, setVolume] = useState(DEFAULT_SETTINGS.volume * 100);
   const [isMuted, setIsMuted] = useState(DEFAULT_SETTINGS.isMuted);
   const [theme, setTheme] = useState('dark');
+  const [isPlaying, setIsPlaying] = useState(null);
+  const [showStats, setShowStats] = useState(false);
+  const [stats, setStats] = useState({ keystrokes: 0, wpm: 0, activeTime: '0m' });
+  const audioContext = useRef(null);
+  const soundBuffers = useRef({});
 
   useEffect(() => {
+    // Load settings
     chrome.storage.sync.get([
       STORAGE_KEYS.SOUND_SET,
       STORAGE_KEYS.VOLUME,
@@ -31,12 +64,85 @@ const Popup = () => {
       if (result[STORAGE_KEYS.IS_MUTED] !== undefined) setIsMuted(result[STORAGE_KEYS.IS_MUTED]);
       if (result[STORAGE_KEYS.THEME]) setTheme(result[STORAGE_KEYS.THEME]);
     });
+
+    // Load stats
+    loadStats();
+
+    // Initialize audio context for preview
+    initAudio();
   }, []);
 
-  const handleSoundSetChange = (event) => {
-    const newSoundSet = event.target.value;
-    setSoundSet(newSoundSet);
-    chrome.storage.sync.set({ [STORAGE_KEYS.SOUND_SET]: newSoundSet });
+  const loadStats = async () => {
+    const today = new Date().toDateString();
+    const result = await chrome.storage.local.get(STORAGE_KEYS.DAILY_STATS);
+    const dailyStats = result[STORAGE_KEYS.DAILY_STATS] || {};
+    const todayStats = dailyStats[today] || { keystrokes: 0, peakWPM: 0, activeTime: 0 };
+    
+    // Format active time
+    const hours = Math.floor(todayStats.activeTime / 60);
+    const minutes = todayStats.activeTime % 60;
+    const activeTimeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+    
+    setStats({
+      keystrokes: todayStats.keystrokes.toLocaleString(),
+      wpm: todayStats.peakWPM,
+      activeTime: activeTimeStr
+    });
+  };
+
+  const initAudio = async () => {
+    try {
+      audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
+      await loadSounds();
+    } catch (error) {
+      console.error('Failed to initialize audio:', error);
+    }
+  };
+
+  const loadSounds = async () => {
+    const loadSound = async (url) => {
+      try {
+        const response = await fetch(chrome.runtime.getURL(url));
+        const arrayBuffer = await response.arrayBuffer();
+        return await audioContext.current.decodeAudioData(arrayBuffer);
+      } catch (error) {
+        console.error(`Error loading sound: ${url}`, error);
+        return null;
+      }
+    };
+
+    for (const [setName, sounds] of Object.entries(SOUND_SETS)) {
+      soundBuffers.current[setName] = {};
+      for (const [key, path] of Object.entries(sounds)) {
+        soundBuffers.current[setName][key] = await loadSound(path);
+      }
+    }
+  };
+
+  const playPreviewSound = (profileId) => {
+    if (!audioContext.current || !soundBuffers.current[profileId]) return;
+
+    setIsPlaying(profileId);
+    const buffer = soundBuffers.current[profileId].default || soundBuffers.current[profileId].Enter;
+    if (!buffer) return;
+
+    const source = audioContext.current.createBufferSource();
+    const gainNode = audioContext.current.createGain();
+
+    source.buffer = buffer;
+    gainNode.gain.value = volume / 100;
+
+    source.connect(gainNode);
+    gainNode.connect(audioContext.current.destination);
+    source.start(0);
+
+    source.onended = () => setIsPlaying(null);
+  };
+
+  const handleSoundSetChange = (profileId) => {
+    setSoundSet(profileId);
+    chrome.storage.sync.set({ [STORAGE_KEYS.SOUND_SET]: profileId });
+    playPreviewSound(profileId);
   };
 
   const handleVolumeChange = (event) => {
@@ -49,7 +155,6 @@ const Popup = () => {
     const muteState = !isMuted;
     setIsMuted(muteState);
     chrome.storage.sync.set({ [STORAGE_KEYS.IS_MUTED]: muteState });
-    // Notify background script about mute toggle
     chrome.runtime.sendMessage({
       type: MESSAGE_TYPES.TOGGLE_MUTE,
       isMuted: muteState
@@ -64,49 +169,123 @@ const Popup = () => {
 
   return (
     <div className={`popup-container ${theme}`}>
+      {/* Header */}
       <div className="header">
-        <h3>
-          Keyboard Sound Options &nbsp;
-          <button onClick={toggleTheme} className="theme-toggle-button">
-            {theme === 'dark' ? <FaSun /> : <FaMoon />}
+        <div className="logo-section">
+          <span className="logo">⌨️</span>
+          <div>
+            <h1>Keyboard ASMR</h1>
+            <p className="tagline">Indulge in your typing experience</p>
+          </div>
+        </div>
+        <div className="header-actions">
+          <button className="icon-btn" onClick={() => {
+            setShowStats(!showStats);
+            if (!showStats) loadStats(); // Refresh stats when opening
+          }} title="Statistics">
+            📊
           </button>
-        </h3>
+          <button className="icon-btn" onClick={toggleTheme} title="Toggle theme">
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+        </div>
       </div>
 
-      <div className="form-group">
-        <label>Select a Sound Profile:</label>
-        <select value={soundSet} onChange={handleSoundSetChange} className="dropdown">
-          {soundSetOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
+      {/* Sound Profiles */}
+      <div className="sound-profiles">
+        <h2>Sound Profiles</h2>
+        <div className="profiles-grid">
+          {soundProfiles.map((profile) => (
+            <div
+              key={profile.id}
+              className={`profile-card ${soundSet === profile.id ? 'active' : ''} ${
+                isPlaying === profile.id ? 'playing' : ''
+              }`}
+              onClick={() => handleSoundSetChange(profile.id)}
+              style={{ '--gradient': profile.color }}
+            >
+              <div className="profile-icon">{profile.icon}</div>
+              <div className="profile-info">
+                <h3>{profile.name}</h3>
+                <p>{profile.description}</p>
+              </div>
+              {soundSet === profile.id && (
+                <div className="active-indicator">
+                  <span className="checkmark">✓</span>
+                </div>
+              )}
+              {isPlaying === profile.id && (
+                <div className="sound-waves">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              )}
+            </div>
           ))}
-        </select>
+        </div>
       </div>
 
-      <div className="form-group">
-        <label>
-          Sound Volume: {volume}%{' '}
-          <button onClick={toggleMute} className="mute-button">
-            {isMuted ? 'Unmute' : 'Mute'}
+      {/* Volume Control */}
+      <div className="volume-section">
+        <div className="volume-header">
+          <h2>Volume Control</h2>
+          <button 
+            className={`mute-toggle ${isMuted ? 'muted' : ''}`}
+            onClick={toggleMute}
+          >
+            {isMuted ? '🔇' : '🔊'}
           </button>
-        </label>
-
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={volume}
-          onChange={handleVolumeChange}
-          className="volume-slider"
-          disabled={isMuted}
-        />
+        </div>
+        <div className="volume-control">
+          <span className="volume-icon">🔈</span>
+          <div className="volume-slider-container">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={volume}
+              onChange={handleVolumeChange}
+              className="volume-slider"
+              disabled={isMuted}
+              style={{
+                '--volume-percent': `${volume}%`,
+              }}
+            />
+            <div className="volume-value">{volume}%</div>
+          </div>
+        </div>
       </div>
 
-      <div className="shortcut-info">
-        <small>
-          Tip: Use {navigator.platform.includes('Mac') ? '⌘+B' : 'Ctrl+B'} to quickly toggle to this menu
-        </small>
+      {/* Stats Panel (Hidden by default) */}
+      {showStats && (
+        <div className="stats-panel">
+          <h2>Today's Stats</h2>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <span className="stat-value">{stats.keystrokes}</span>
+              <span className="stat-label">Keystrokes</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-value">{stats.wpm}</span>
+              <span className="stat-label">Peak WPM</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-value">{stats.activeTime}</span>
+              <span className="stat-label">Active Time</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="footer">
+        <div className="shortcut-hint">
+          <kbd>{navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}</kbd>
+          <span>+</span>
+          <kbd>B</kbd>
+          <span className="hint-text">to toggle mute</span>
+        </div>
       </div>
     </div>
   );

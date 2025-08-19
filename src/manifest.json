@@ -13,16 +13,7 @@
     "128": "icon-128.png",
     "34": "icon-34.png"
   },
-  "permissions": ["storage", "commands", "offscreen"],
-  "commands": {
-    "_execute_action": {
-      "suggested_key": {
-        "default": "Ctrl+B",
-        "mac": "Command+B"
-      },
-      "description": "Toggle keyboard sounds"
-    }
-  },
+  "permissions": ["storage", "offscreen"],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
@@ -41,7 +32,8 @@
         "icon-128-disabled.png",
         "icon-34.png",
         "icon-34-disabled.png",
-        "offscreen.html"
+        "offscreen.html",
+        "injected.bundle.js"
       ],
       "matches": ["<all_urls>"]
     }
