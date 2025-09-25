@@ -1,0 +1,17 @@
+name: "Keychron Brown"
+author: "KeyboardASMR Team"
+description: "Tactile bump with moderate feedback"
+version: "1.0"
+
+ui:
+  icon: "🟤"
+  color: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+  category: "mechanical"
+
+audio_sources:
+  medium_press:
+    type: "bundled"
+    path: "keyboard/medium.wav"
+
+key_mappings:
+  default: "medium_press"

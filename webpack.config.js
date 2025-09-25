@@ -26,6 +26,7 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 
 var options = {
   mode: process.env.NODE_ENV || 'development',
+  target: 'web',
   entry: {
     popup: path.join(__dirname, 'src', 'pages', 'Popup', 'index.jsx'),
     background: path.join(__dirname, 'src', 'pages', 'Background', 'index.js'),
@@ -34,7 +35,7 @@ var options = {
     offscreen: path.join(__dirname, 'src', 'pages', 'Offscreen', 'index.js'),
   },
   chromeExtensionBoilerplate: {
-    notHotReload: ['background', 'contentScript', 'devtools', 'offscreen'],
+    notHotReload: ['background', 'contentScript', 'devtools', 'offscreen', 'injected'],
   },
   output: {
     filename: '[name].bundle.js',
@@ -102,7 +103,8 @@ var options = {
             loader: require.resolve('babel-loader'),
             options: {
               presets: ['@babel/preset-env', '@babel/preset-react'],
-              plugins: [isDevelopment && require.resolve('react-refresh/babel')].filter(Boolean),
+              // Disable React Refresh for Chrome extensions to prevent dev server injection
+              plugins: [],
             },
           },
         ],
@@ -115,7 +117,8 @@ var options = {
     extensions: fileExtensions.map((extension) => '.' + extension).concat(['.js', '.jsx', '.ts', '.tsx', '.css']),
   },
   plugins: [
-    isDevelopment && new ReactRefreshWebpackPlugin(),
+    // ReactRefreshWebpackPlugin disabled for Chrome extensions to prevent security errors
+    // isDevelopment && new ReactRefreshWebpackPlugin(),
     new CleanWebpackPlugin({ verbose: false }),
     new webpack.ProgressPlugin(),
     // expose and write the allowed env vars on the compiled bundle
@@ -180,6 +183,15 @@ var options = {
         {
           from: 'src/assets/sounds',
           to: path.join(__dirname, 'build/assets/sounds'),
+          force: true,
+        },
+      ],
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: 'src/sound_profiles',
+          to: path.join(__dirname, 'build/sound_profiles'),
           force: true,
         },
       ],
