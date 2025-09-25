@@ -1,0 +1,27 @@
+name: "Typewriter"
+author: "KeyboardASMR Team"
+description: "Classic mechanical typewriter sounds"
+version: "1.0"
+
+ui:
+  icon: "⌨️"
+  color: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+  category: "classic"
+
+audio_sources:
+  key_press:
+    type: "bundled"
+    path: "typewriter/key-press.wav"
+
+  enter_key:
+    type: "bundled"
+    path: "typewriter/enter-key.wav"
+
+  backspace_key:
+    type: "bundled"
+    path: "typewriter/backspace-tyr.wav"
+
+key_mappings:
+  default: "key_press"
+  Enter: "enter_key"
+  Backspace: "backspace_key"

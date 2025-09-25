@@ -1,0 +1,25 @@
+name: "Pop Sounds"
+author: "KeyboardASMR Team"
+description: "Light popping sounds for a satisfying typing experience"
+version: "1.0"
+
+ui:
+  icon: "🫧"
+  color: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)"
+  category: "fun"
+
+audio_sources:
+  pop_press:
+    type: "bundled"
+    path: "pops/key-press.wav"
+  pop_enter:
+    type: "bundled"
+    path: "pops/enter.wav"
+  pop_backspace:
+    type: "bundled"
+    path: "pops/backspace.wav"
+
+key_mappings:
+  default: "pop_press"
+  Enter: "pop_enter"
+  Backspace: "pop_backspace"

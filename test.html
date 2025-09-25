@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyboard ASMR Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .test-area {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        textarea, input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        iframe {
+            width: 100%;
+            height: 200px;
+            border: 1px solid #ccc;
+            margin: 10px 0;
+        }
+        .contenteditable {
+            min-height: 100px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+        .status {
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎹 Keyboard ASMR Extension Test Page</h1>
+    
+    <div class="status">
+        <strong>Instructions:</strong> Install the extension, then type in the different areas below. 
+        You should hear keyboard sounds in all input areas.
+    </div>
+
+    <div class="test-area">
+        <h2>1. Regular Input Field</h2>
+        <input type="text" placeholder="Type here to test regular input...">
+    </div>
+
+    <div class="test-area">
+        <h2>2. Textarea</h2>
+        <textarea placeholder="Type here to test textarea..." rows="4"></textarea>
+    </div>
+
+    <div class="test-area">
+        <h2>3. ContentEditable Div</h2>
+        <div contenteditable="true" class="contenteditable">
+            Click here and type to test contenteditable...
+        </div>
+    </div>
+
+    <div class="test-area">
+        <h2>4. Nested Input in Shadow DOM</h2>
+        <div id="shadow-host"></div>
+    </div>
+
+    <div class="test-area">
+        <h2>5. IFrame with Input</h2>
+        <iframe srcdoc="
+            <html>
+                <body style='font-family: Arial; padding: 10px;'>
+                    <h3>IFrame Input Test</h3>
+                    <input type='text' placeholder='Type in iframe...' style='width: 100%; padding: 5px;'>
+                </body>
+            </html>
+        "></iframe>
+    </div>
+
+    <div class="test-area">
+        <h2>6. Dynamic Content</h2>
+        <button onclick="addDynamicInput()">Add Dynamic Input</button>
+        <div id="dynamic-container"></div>
+    </div>
+
+    <script>
+        // Create Shadow DOM test
+        const shadowHost = document.getElementById('shadow-host');
+        const shadowRoot = shadowHost.attachShadow({ mode: 'open' });
+        shadowRoot.innerHTML = `
+            <style>
+                input {
+                    width: 100%;
+                    padding: 10px;
+                    font-size: 16px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                }
+            </style>
+            <input type="text" placeholder="Type in Shadow DOM...">
+        `;
+
+        // Dynamic content function
+        function addDynamicInput() {
+            const container = document.getElementById('dynamic-container');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = 'Dynamically added input...';
+            input.style.width = '100%';
+            input.style.padding = '10px';
+            input.style.marginTop = '10px';
+            container.appendChild(input);
+        }
+
+        // Log keyboard events for debugging
+        document.addEventListener('keydown', (e) => {
+            console.log('Test page detected keydown:', e.key);
+        });
+    </script>
+</body>
+</html>

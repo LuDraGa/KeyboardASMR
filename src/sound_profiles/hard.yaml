@@ -1,0 +1,17 @@
+name: "Keychron Blue"
+author: "KeyboardASMR Team"
+description: "Clicky & loud tactile switches"
+version: "1.0"
+
+ui:
+  icon: "🔵"
+  color: "linear-gradient(135deg, #30cfd0 0%, #330867 100%)"
+  category: "mechanical"
+
+audio_sources:
+  hard_press:
+    type: "bundled"
+    path: "keyboard/hard.wav"
+
+key_mappings:
+  default: "hard_press"

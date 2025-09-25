@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS, MESSAGE_TYPES, STORAGE_KEYS, SOUND_SETS } from '../../shared/config';
+import { DEFAULT_SETTINGS, MESSAGE_TYPES, STORAGE_KEYS, getSoundSets } from '../../shared/config';
 
 // State management
 let isMuted = DEFAULT_SETTINGS.isMuted;
@@ -37,12 +37,19 @@ async function loadSounds() {
     }
   };
 
-  // Load all sounds from configuration
-  for (const [setName, sounds] of Object.entries(SOUND_SETS)) {
-    soundBuffers[setName] = {};
-    for (const [key, path] of Object.entries(sounds)) {
-      soundBuffers[setName][key] = await loadSound(path);
+  try {
+    // Get sound sets from profile loader (with fallback)
+    const SOUND_SETS = await getSoundSets();
+
+    // Load all sounds from configuration
+    for (const [setName, sounds] of Object.entries(SOUND_SETS)) {
+      soundBuffers[setName] = {};
+      for (const [key, path] of Object.entries(sounds)) {
+        soundBuffers[setName][key] = await loadSound(path);
+      }
     }
+  } catch (error) {
+    console.error('Keyboard ASMR: Failed to load sound sets:', error);
   }
 }
 

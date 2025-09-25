@@ -1,0 +1,17 @@
+name: "Keychron Red"
+author: "KeyboardASMR Team"
+description: "Soft & smooth linear switches"
+version: "1.0"
+
+ui:
+  icon: "🔴"
+  color: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+  category: "mechanical"
+
+audio_sources:
+  soft_press:
+    type: "bundled"
+    path: "keyboard/soft.wav"
+
+key_mappings:
+  default: "soft_press"
