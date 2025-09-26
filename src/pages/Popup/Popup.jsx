@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Popup.css';
-import { DEFAULT_SETTINGS, MESSAGE_TYPES, STORAGE_KEYS, SOUND_SETS } from '../../shared/config';
+import { DEFAULT_SETTINGS, MESSAGE_TYPES, STORAGE_KEYS } from '../../shared/config';
 import { profileLoader } from '../../utils/profileLoader';
 
 const Popup = () => {
@@ -8,15 +8,12 @@ const Popup = () => {
   const [volume, setVolume] = useState(DEFAULT_SETTINGS.volume * 100);
   const [isMuted, setIsMuted] = useState(DEFAULT_SETTINGS.isMuted);
   const [theme, setTheme] = useState('dark');
-  const [isPlaying, setIsPlaying] = useState(null);
   const [soundProfiles, setSoundProfiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const audioContext = useRef(null);
-  const soundBuffers = useRef({});
 
   useEffect(() => {
     const initialize = async () => {
-      // Load profiles first
+      // Load profiles
       try {
         const profiles = await profileLoader.loadBundledProfiles();
         setSoundProfiles(profiles);
@@ -25,94 +22,25 @@ const Popup = () => {
       }
 
       // Load settings
-      chrome.storage.sync.get([
-        STORAGE_KEYS.SOUND_SET,
-        STORAGE_KEYS.VOLUME,
-        STORAGE_KEYS.IS_MUTED,
-        STORAGE_KEYS.THEME
-      ], (result) => {
-        if (result[STORAGE_KEYS.SOUND_SET]) setSoundSet(result[STORAGE_KEYS.SOUND_SET]);
-        if (result[STORAGE_KEYS.VOLUME] !== undefined) setVolume(result[STORAGE_KEYS.VOLUME]);
-        if (result[STORAGE_KEYS.IS_MUTED] !== undefined) setIsMuted(result[STORAGE_KEYS.IS_MUTED]);
-        if (result[STORAGE_KEYS.THEME]) setTheme(result[STORAGE_KEYS.THEME]);
-      });
+      chrome.storage.sync.get(
+        [STORAGE_KEYS.SOUND_SET, STORAGE_KEYS.VOLUME, STORAGE_KEYS.IS_MUTED, STORAGE_KEYS.THEME],
+        (result) => {
+          if (result[STORAGE_KEYS.SOUND_SET]) setSoundSet(result[STORAGE_KEYS.SOUND_SET]);
+          if (result[STORAGE_KEYS.VOLUME] !== undefined) setVolume(result[STORAGE_KEYS.VOLUME]);
+          if (result[STORAGE_KEYS.IS_MUTED] !== undefined) setIsMuted(result[STORAGE_KEYS.IS_MUTED]);
+          if (result[STORAGE_KEYS.THEME]) setTheme(result[STORAGE_KEYS.THEME]);
+        }
+      );
 
-      // Initialize audio context for preview
-      await initAudio();
       setIsLoading(false);
     };
 
     initialize();
   }, []);
 
-  const initAudio = async () => {
-    try {
-      audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
-      await loadSounds();
-    } catch (error) {
-      console.error('Failed to initialize audio:', error);
-    }
-  };
-
-  const loadSounds = async () => {
-    const loadSound = async (url) => {
-      try {
-        const response = await fetch(url);
-        const arrayBuffer = await response.arrayBuffer();
-        return await audioContext.current.decodeAudioData(arrayBuffer);
-      } catch (error) {
-        console.error(`Error loading sound: ${url}`, error);
-        return null;
-      }
-    };
-
-    // Load sounds for each profile
-    for (const profile of soundProfiles) {
-      soundBuffers.current[profile.id] = {};
-
-      // Load each audio source for this profile
-      for (const [sourceId, sourceConfig] of Object.entries(profile.audio_sources)) {
-        try {
-          const audioUrl = await profileLoader.resolveAudioUrl(sourceConfig);
-          soundBuffers.current[profile.id][sourceId] = await loadSound(audioUrl);
-        } catch (error) {
-          console.warn(`Failed to load sound ${sourceId} for profile ${profile.id}:`, error);
-        }
-      }
-    }
-  };
-
-  const playPreviewSound = (profileId) => {
-    if (!audioContext.current || !soundBuffers.current[profileId]) return;
-
-    const profile = soundProfiles.find(p => p.id === profileId);
-    if (!profile) return;
-
-    setIsPlaying(profileId);
-
-    // Get the default sound source for preview
-    const defaultSourceId = profile.key_mappings.default;
-    const buffer = soundBuffers.current[profileId][defaultSourceId];
-
-    if (!buffer) return;
-
-    const source = audioContext.current.createBufferSource();
-    const gainNode = audioContext.current.createGain();
-
-    source.buffer = buffer;
-    gainNode.gain.value = volume / 100;
-
-    source.connect(gainNode);
-    gainNode.connect(audioContext.current.destination);
-    source.start(0);
-
-    source.onended = () => setIsPlaying(null);
-  };
-
   const handleSoundSetChange = (profileId) => {
     setSoundSet(profileId);
     chrome.storage.sync.set({ [STORAGE_KEYS.SOUND_SET]: profileId });
-    playPreviewSound(profileId);
   };
 
   const handleVolumeChange = (event) => {
@@ -127,7 +55,7 @@ const Popup = () => {
     chrome.storage.sync.set({ [STORAGE_KEYS.IS_MUTED]: muteState });
     chrome.runtime.sendMessage({
       type: MESSAGE_TYPES.TOGGLE_MUTE,
-      isMuted: muteState
+      isMuted: muteState,
     });
   };
 
@@ -163,32 +91,23 @@ const Popup = () => {
             <div className="loading-state">Loading profiles...</div>
           ) : (
             soundProfiles.map((profile) => (
-            <div
-              key={profile.id}
-              className={`profile-card ${soundSet === profile.id ? 'active' : ''} ${
-                isPlaying === profile.id ? 'playing' : ''
-              }`}
-              onClick={() => handleSoundSetChange(profile.id)}
-              style={{ '--gradient': profile.ui.color }}
-            >
-              <div className="profile-icon">{profile.ui.icon}</div>
-              <div className="profile-info">
-                <h3>{profile.name}</h3>
-                <p>{profile.description}</p>
+              <div
+                key={profile.id}
+                className={`profile-card ${soundSet === profile.id ? 'active' : ''}`}
+                onClick={() => handleSoundSetChange(profile.id)}
+                style={{ '--gradient': profile.ui.color }}
+              >
+                <div className="profile-icon">{profile.ui.icon}</div>
+                <div className="profile-info">
+                  <h3>{profile.name}</h3>
+                  <p>{profile.description}</p>
+                </div>
+                {soundSet === profile.id && (
+                  <div className="active-indicator">
+                    <span className="checkmark">✓</span>
+                  </div>
+                )}
               </div>
-              {soundSet === profile.id && (
-                <div className="active-indicator">
-                  <span className="checkmark">✓</span>
-                </div>
-              )}
-              {isPlaying === profile.id && (
-                <div className="sound-waves">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              )}
-            </div>
             ))
           )}
         </div>
@@ -198,10 +117,7 @@ const Popup = () => {
       <div className="volume-section">
         <div className="volume-header">
           <h2>Volume Control</h2>
-          <button 
-            className={`mute-toggle ${isMuted ? 'muted' : ''}`}
-            onClick={toggleMute}
-          >
+          <button className={`mute-toggle ${isMuted ? 'muted' : ''}`} onClick={toggleMute}>
             {isMuted ? '🔇' : '🔊'}
           </button>
         </div>
@@ -227,7 +143,7 @@ const Popup = () => {
 
       {/* Footer */}
       <div className="footer">
-        <a 
+        <a
           href="https://chromewebstore.google.com/detail/keyboard-asmr/aebnkjebahjkkpiknggemolakkjggiab"
           target="_blank"
           rel="noopener noreferrer"

@@ -71,8 +71,13 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .logo-section h1 {
@@ -221,9 +226,15 @@ body {
 }
 
 @keyframes bounceIn {
-  0% { transform: scale(0); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .checkmark {
@@ -261,8 +272,13 @@ body {
 }
 
 @keyframes wave {
-  0%, 100% { transform: scaleY(0.5); }
-  50% { transform: scaleY(1); }
+  0%,
+  100% {
+    transform: scaleY(0.5);
+  }
+  50% {
+    transform: scaleY(1);
+  }
 }
 
 /* Volume Section */
@@ -493,8 +509,15 @@ body {
 }
 
 @keyframes twinkle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.1); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
 }
 
 .review-text {
@@ -574,7 +597,7 @@ kbd {
   html {
     font-size: 12px;
   }
-  
+
   .profiles-grid {
     grid-template-columns: repeat(2, 1fr);
   }
