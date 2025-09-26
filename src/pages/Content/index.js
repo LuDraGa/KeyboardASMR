@@ -13,7 +13,7 @@ let isAudioInitialized = false;
 // Initialize Web Audio API
 async function initAudio() {
   if (isAudioInitialized) return;
-  
+
   try {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     await loadSounds();
@@ -80,10 +80,10 @@ function playSound(key) {
 function injectScript() {
   const script = document.createElement('script');
   script.src = chrome.runtime.getURL('injected.bundle.js');
-  script.onload = function() {
+  script.onload = function () {
     this.remove();
   };
-  
+
   // Inject as early as possible
   (document.head || document.documentElement).appendChild(script);
 }
@@ -102,50 +102,54 @@ function injectedFunction() {
   const MESSAGE_SOURCE = 'keyboard-asmr-injected';
   const DEBOUNCE_DELAY = 30;
   let lastKeyTime = 0;
-  
+
   function handleKeyboardEvent(event) {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
-    
+
     const currentTime = Date.now();
     if (currentTime - lastKeyTime < DEBOUNCE_DELAY) return;
     lastKeyTime = currentTime;
-    
-    window.postMessage({
-      source: MESSAGE_SOURCE,
-      type: 'KEYPRESS',
-      data: { key: event.key, timestamp: currentTime }
-    }, '*');
+
+    window.postMessage(
+      {
+        source: MESSAGE_SOURCE,
+        type: 'KEYPRESS',
+        data: { key: event.key, timestamp: currentTime },
+      },
+      '*'
+    );
   }
-  
+
   window.addEventListener('keydown', handleKeyboardEvent, true);
   document.addEventListener('keydown', handleKeyboardEvent, true);
 }
-
 
 // Listen for messages from injected script
 window.addEventListener('message', async (event) => {
   // Only accept messages from the same window
   if (event.source !== window) return;
-  
+
   // Check if it's our message
   if (event.data?.source === 'keyboard-asmr-injected' && event.data?.type === 'KEYPRESS') {
     // Initialize audio on first keypress if needed
     if (!isAudioInitialized) {
       await initAudio();
     }
-    
+
     // Play sound directly (only if not muted)
     if (!isMuted) {
       playSound(event.data.data.key);
     }
-    
+
     // Also notify background for icon updates (optional)
-    chrome.runtime.sendMessage({
-      type: MESSAGE_TYPES.KEYPRESS,
-      key: event.data.data.key,
-    }).catch(() => {
-      // Ignore errors if background is not available
-    });
+    chrome.runtime
+      .sendMessage({
+        type: MESSAGE_TYPES.KEYPRESS,
+        key: event.data.data.key,
+      })
+      .catch(() => {
+        // Ignore errors if background is not available
+      });
   }
 });
 
@@ -154,7 +158,7 @@ chrome.storage.sync.get([STORAGE_KEYS.SOUND_SET, STORAGE_KEYS.VOLUME, STORAGE_KE
   currentSoundSet = result[STORAGE_KEYS.SOUND_SET] || DEFAULT_SETTINGS.soundSet;
   volume = result[STORAGE_KEYS.VOLUME] !== undefined ? result[STORAGE_KEYS.VOLUME] / 100 : DEFAULT_SETTINGS.volume;
   isMuted = result[STORAGE_KEYS.IS_MUTED] ?? DEFAULT_SETTINGS.isMuted;
-  
+
   // Initialize audio if not muted
   if (!isMuted) {
     await initAudio();
@@ -197,19 +201,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Fallback: Also listen for keyboard events directly (for sites where injection fails)
 document.addEventListener('keydown', async (event) => {
   if (isMuted) return;
-  
+
   // Initialize audio on first keypress if needed
   if (!isAudioInitialized) {
     await initAudio();
   }
-  
+
   playSound(event.key);
-  
+
   // Notify background
-  chrome.runtime.sendMessage({
-    type: MESSAGE_TYPES.KEYPRESS,
-    key: event.key,
-  }).catch(() => {});
+  chrome.runtime
+    .sendMessage({
+      type: MESSAGE_TYPES.KEYPRESS,
+      key: event.key,
+    })
+    .catch(() => {});
 });
 
 // Try to inject script early

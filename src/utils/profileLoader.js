@@ -18,14 +18,7 @@ class ProfileLoader {
     const profiles = [];
 
     // Define bundled profile files
-    const bundledProfileFiles = [
-      'typewriter.yaml',
-      'soft.yaml',
-      'medium.yaml',
-      'hard.yaml',
-      'drum.yaml',
-      'pops.yaml'
-    ];
+    const bundledProfileFiles = ['typewriter.yaml', 'soft.yaml', 'medium.yaml', 'hard.yaml', 'drum.yaml', 'pops.yaml'];
 
     for (const filename of bundledProfileFiles) {
       try {
@@ -88,7 +81,7 @@ class ProfileLoader {
       icon: '🎹',
       color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       category: 'default',
-      ...profileData.ui
+      ...profileData.ui,
     };
 
     // Validate audio sources
@@ -105,7 +98,7 @@ class ProfileLoader {
       version: profileData.version || '1.0',
       ui,
       audio_sources: profileData.audio_sources,
-      key_mappings: profileData.key_mappings
+      key_mappings: profileData.key_mappings,
     };
   }
 

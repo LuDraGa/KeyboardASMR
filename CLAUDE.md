@@ -5,13 +5,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ### Build & Development
+
 - **Build extension**: `npm run build` - Creates production build in `/build` directory
 - **Development server**: `npm run start` - Runs webpack dev server for hot reload during development
 - **Format code**: `npm run prettier` - Formats all JS/JSX/TS/TSX/JSON/CSS/SCSS/MD files
+- **Lint code**: ESLint is configured but no lint script in package.json - run manually if needed
 
 ### Environment Setup
+
 - Node version: 18.20.3 (specified in `.nvmrc`)
 - Install dependencies: `npm install`
+
+### Testing
+
+- No test framework is currently configured in this project
+- All test files found are from node_modules dependencies only
 
 ## Architecture Overview
 
@@ -19,7 +27,8 @@ This is a Chrome Extension (Manifest V3) that plays keyboard sounds when users t
 
 ### Core Components
 
-1. **Content Script** (`src/pages/Content/index.js`): 
+1. **Content Script** (`src/pages/Content/index.js`):
+
    - Handles ALL audio playback directly using Web Audio API
    - Loads and caches sound buffers for all sound sets
    - Injects a script into the page context to capture keyboard events
@@ -27,12 +36,14 @@ This is a Chrome Extension (Manifest V3) that plays keyboard sounds when users t
    - Falls back to direct event listening for sites where injection fails
 
 2. **Injected Script** (`src/pages/Content/injected.js`):
+
    - Runs in the page's JavaScript context (not extension context)
    - Captures raw keyboard events before any page scripts can prevent them
    - Communicates with content script via window.postMessage
    - Uses debouncing (30ms) to prevent duplicate sounds
 
 3. **Background Service Worker** (`src/pages/Background/index.js`):
+
    - Manages extension state and icon updates
    - Broadcasts mute state changes to all tabs and frames
    - No longer handles audio playback (moved to content script for better performance)
@@ -56,17 +67,22 @@ This is a Chrome Extension (Manifest V3) that plays keyboard sounds when users t
 ### Sound System
 
 Sound sets are defined in `src/shared/config.js`:
+
 - `typewriter`: Different sounds for Enter and Backspace keys
 - `soft/medium/hard`: Keyboard switch simulations (Red/Brown/Blue)
 - `drum`: Different drum sounds for different keys (space, enter, backspace)
 
 Each sound set can have:
+
 - `default`: Sound for most keys
 - Key-specific sounds (e.g., `Enter`, `Backspace`, ` ` for space)
+
+Audio files are located in `src/assets/sounds/` with subdirectories for each sound type (typewriter, keyboard, drum).
 
 ### Build System
 
 Uses Webpack 5 with:
+
 - Multiple entry points for different extension components
 - CopyWebpackPlugin to handle manifest.json and static assets
 - Automatic version injection from package.json
