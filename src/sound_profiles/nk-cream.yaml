@@ -1,0 +1,45 @@
+name: "NovelKeys Cream"
+author: "NovelKeys"
+description: "Self-lubricating linear switch that gets smoother over time with a creamy feel"
+version: "1.0"
+
+ui:
+  icon: "🍦"
+  color: "linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 50%, #e17055 100%)"
+  category: "mechanical"
+
+audio_sources:
+  nk_cream_a:
+    type: "bundled"
+    path: "nk-cream/a.wav"
+  nk_cream_b:
+    type: "bundled"
+    path: "nk-cream/b.wav"
+  nk_cream_c:
+    type: "bundled"
+    path: "nk-cream/c.wav"
+  nk_cream_d:
+    type: "bundled"
+    path: "nk-cream/d.wav"
+  nk_cream_e:
+    type: "bundled"
+    path: "nk-cream/e.wav"
+  nk_cream_f:
+    type: "bundled"
+    path: "nk-cream/f.wav"
+  nk_cream_space:
+    type: "bundled"
+    path: "nk-cream/space.wav"
+  nk_cream_enter:
+    type: "bundled"
+    path: "nk-cream/enter.wav"
+  nk_cream_backspace:
+    type: "bundled"
+    path: "nk-cream/backspace.wav"
+
+key_mappings:
+  default: "nk_cream_a"
+  " ": "nk_cream_space"
+  Enter: "nk_cream_enter"
+  Backspace: "nk_cream_backspace"
+  Delete: "nk_cream_backspace"

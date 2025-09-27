@@ -1,0 +1,42 @@
+name: "Gateron Black Ink"
+author: "Gateron"
+description: "Premium linear switch with smooth keystrokes and deep sound signature"
+version: "1.0"
+
+ui:
+  icon: "🖤"
+  color: "linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 50%, #000000 100%)"
+  category: "mechanical"
+
+audio_sources:
+  gateron_black_key1:
+    type: "bundled"
+    path: "gateron-black-ink/press_key1.mp3"
+  gateron_black_key2:
+    type: "bundled"
+    path: "gateron-black-ink/press_key2.mp3"
+  gateron_black_key3:
+    type: "bundled"
+    path: "gateron-black-ink/press_key3.mp3"
+  gateron_black_key4:
+    type: "bundled"
+    path: "gateron-black-ink/press_key4.mp3"
+  gateron_black_key5:
+    type: "bundled"
+    path: "gateron-black-ink/press_key5.mp3"
+  gateron_black_space:
+    type: "bundled"
+    path: "gateron-black-ink/press_space.mp3"
+  gateron_black_enter:
+    type: "bundled"
+    path: "gateron-black-ink/press_enter.mp3"
+  gateron_black_back:
+    type: "bundled"
+    path: "gateron-black-ink/press_back.mp3"
+
+key_mappings:
+  default: "gateron_black_key1"
+  " ": "gateron_black_space"
+  Enter: "gateron_black_enter"
+  Backspace: "gateron_black_back"
+  Delete: "gateron_black_back"

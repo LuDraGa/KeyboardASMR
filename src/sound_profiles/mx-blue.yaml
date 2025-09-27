@@ -1,0 +1,33 @@
+name: "Cherry MX Blue"
+author: "Cherry"
+description: "Classic clicky switch with audible click and tactile feedback"
+version: "1.0"
+
+ui:
+  icon: "🔵"
+  color: "linear-gradient(135deg, #3742fa 0%, #2f3542 50%, #57606f 100%)"
+  category: "mechanical"
+
+audio_sources:
+  mx_blue_key1:
+    type: "bundled"
+    path: "mx-blue/press_key1.mp3"
+  mx_blue_key2:
+    type: "bundled"
+    path: "mx-blue/press_key2.mp3"
+  mx_blue_key3:
+    type: "bundled"
+    path: "mx-blue/press_key3.mp3"
+  mx_blue_key4:
+    type: "bundled"
+    path: "mx-blue/press_key4.mp3"
+  mx_blue_key5:
+    type: "bundled"
+    path: "mx-blue/press_key5.mp3"
+
+key_mappings:
+  default: "mx_blue_key1"
+  " ": "mx_blue_key4"
+  Enter: "mx_blue_key5"
+  Backspace: "mx_blue_key3"
+  Delete: "mx_blue_key3"

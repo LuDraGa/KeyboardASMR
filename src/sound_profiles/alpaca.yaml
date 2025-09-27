@@ -1,0 +1,42 @@
+name: "Alpaca"
+author: "kbsim"
+description: "Sample of an Alpaca Mechanical Keyboard"
+version: "1.0"
+
+ui:
+  icon: "🦙"
+  color: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+  category: "mechanical"
+
+audio_sources:
+  alpaca_key1:
+    type: "bundled"
+    path: "alpaca/press_key1.mp3"
+  alpaca_key2:
+    type: "bundled"
+    path: "alpaca/press_key2.mp3"
+  alpaca_key3:
+    type: "bundled"
+    path: "alpaca/press_key3.mp3"
+  alpaca_key4:
+    type: "bundled"
+    path: "alpaca/press_key4.mp3"
+  alpaca_key5:
+    type: "bundled"
+    path: "alpaca/press_key5.mp3"
+  alpaca_space:
+    type: "bundled"
+    path: "alpaca/press_space.mp3"
+  alpaca_enter:
+    type: "bundled"
+    path: "alpaca/press_enter.mp3"
+  alpaca_back:
+    type: "bundled"
+    path: "alpaca/press_back.mp3"
+
+key_mappings:
+  default: "alpaca_key1"
+  " ": "alpaca_space"
+  Enter: "alpaca_enter"
+  Backspace: "alpaca_back"
+  Delete: "alpaca_back"

@@ -1,0 +1,51 @@
+name: "Opera GX"
+author: "Opera Software"
+description: "Gaming browser keyboard sounds with futuristic and dynamic audio feedback"
+version: "1.0"
+
+ui:
+  icon: "🎮"
+  color: "linear-gradient(135deg, #ff1744 0%, #ff6f00 50%, #e040fb 100%)"
+  category: "gaming"
+
+audio_sources:
+  opera_key1:
+    type: "bundled"
+    path: "opera-gx/1real.wav"
+  opera_key2:
+    type: "bundled"
+    path: "opera-gx/2real.wav"
+  opera_key3:
+    type: "bundled"
+    path: "opera-gx/3real.wav"
+  opera_key4:
+    type: "bundled"
+    path: "opera-gx/4real.wav"
+  opera_key5:
+    type: "bundled"
+    path: "opera-gx/5real.wav"
+  opera_key6:
+    type: "bundled"
+    path: "opera-gx/6real.wav"
+  opera_key7:
+    type: "bundled"
+    path: "opera-gx/7real.wav"
+  opera_key8:
+    type: "bundled"
+    path: "opera-gx/8real.wav"
+  opera_space:
+    type: "bundled"
+    path: "opera-gx/space.wav"
+  opera_enter:
+    type: "bundled"
+    path: "opera-gx/enter.wav"
+  opera_backspace:
+    type: "bundled"
+    path: "opera-gx/backspace.wav"
+
+key_mappings:
+  default: "opera_key1"
+  " ": "opera_space"
+  Enter: "opera_enter"
+  Backspace: "opera_backspace"
+  Delete: "opera_backspace"

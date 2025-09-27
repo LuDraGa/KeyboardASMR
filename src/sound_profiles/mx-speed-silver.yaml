@@ -1,0 +1,36 @@
+name: "Cherry MX Speed Silver"
+author: "Cherry"
+description: "Ultra-fast linear switch designed for gaming with short actuation distance"
+version: "1.0"
+
+ui:
+  icon: "🏃"
+  color: "linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 50%, #808080 100%)"
+  category: "gaming"
+
+audio_sources:
+  mx_speed_key1:
+    type: "bundled"
+    path: "mx-speed-silver/mx-speed-silver-1.wav"
+  mx_speed_key2:
+    type: "bundled"
+    path: "mx-speed-silver/mx-speed-silver-2.wav"
+  mx_speed_key3:
+    type: "bundled"
+    path: "mx-speed-silver/mx-speed-silver-3.wav"
+  mx_speed_key4:
+    type: "bundled"
+    path: "mx-speed-silver/mx-speed-silver-4.wav"
+  mx_speed_key5:
+    type: "bundled"
+    path: "mx-speed-silver/mx-speed-silver-5.wav"
+  mx_speed_key6:
+    type: "bundled"
+    path: "mx-speed-silver/mx-speed-silver-6.wav"
+
+key_mappings:
+  default: "mx_speed_key1"
+  " ": "mx_speed_key5"
+  Enter: "mx_speed_key6"
+  Backspace: "mx_speed_key4"
+  Delete: "mx_speed_key4"

@@ -1,0 +1,39 @@
+name: "Banana Split"
+author: "TKC"
+description: "Custom tactile mechanical switch with a satisfying bump and smooth travel"
+version: "1.0"
+
+ui:
+  icon: "🍌"
+  color: "linear-gradient(135deg, #ffdd59 0%, #ffcc02 50%, #ff9500 100%)"
+  category: "mechanical"
+
+audio_sources:
+  banana_key1:
+    type: "bundled"
+    path: "banana-split/banana-l-1.wav"
+  banana_key2:
+    type: "bundled"
+    path: "banana-split/banana-l-2.wav"
+  banana_key3:
+    type: "bundled"
+    path: "banana-split/banana-l-3.wav"
+  banana_key4:
+    type: "bundled"
+    path: "banana-split/banana-l-4.wav"
+  banana_key5:
+    type: "bundled"
+    path: "banana-split/banana-l-5.wav"
+  banana_key6:
+    type: "bundled"
+    path: "banana-split/banana-l-6.wav"
+  banana_key7:
+    type: "bundled"
+    path: "banana-split/banana-l-7.wav"
+
+key_mappings:
+  default: "banana_key1"
+  " ": "banana_key6"
+  Enter: "banana_key7"
+  Backspace: "banana_key5"
+  Delete: "banana_key5"
