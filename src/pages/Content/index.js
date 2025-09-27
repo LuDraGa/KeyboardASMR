@@ -242,7 +242,7 @@ if (document.documentElement) {
 
 // Initialize audio context early (in suspended state)
 // This avoids the "user gesture" requirement since context starts suspended
-initAudio().catch(error => {
+initAudio().catch((error) => {
   console.error('Keyboard ASMR: Failed to pre-initialize audio:', error);
 });
 
