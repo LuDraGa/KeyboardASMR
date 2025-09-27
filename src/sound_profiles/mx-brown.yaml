@@ -1,0 +1,42 @@
+name: "Cherry MX Brown"
+author: "Cherry"
+description: "Tactile switch with subtle bump and quiet operation, perfect for typing"
+version: "1.0"
+
+ui:
+  icon: "🤎"
+  color: "linear-gradient(135deg, #d2691e 0%, #8b4513 50%, #654321 100%)"
+  category: "mechanical"
+
+audio_sources:
+  mx_brown_key1:
+    type: "bundled"
+    path: "mx-brown/press_key1.mp3"
+  mx_brown_key2:
+    type: "bundled"
+    path: "mx-brown/press_key2.mp3"
+  mx_brown_key3:
+    type: "bundled"
+    path: "mx-brown/press_key3.mp3"
+  mx_brown_key4:
+    type: "bundled"
+    path: "mx-brown/press_key4.mp3"
+  mx_brown_key5:
+    type: "bundled"
+    path: "mx-brown/press_key5.mp3"
+  mx_brown_space:
+    type: "bundled"
+    path: "mx-brown/press_space.mp3"
+  mx_brown_enter:
+    type: "bundled"
+    path: "mx-brown/press_enter.mp3"
+  mx_brown_back:
+    type: "bundled"
+    path: "mx-brown/press_back.mp3"
+
+key_mappings:
+  default: "mx_brown_key1"
+  " ": "mx_brown_space"
+  Enter: "mx_brown_enter"
+  Backspace: "mx_brown_back"
+  Delete: "mx_brown_back"

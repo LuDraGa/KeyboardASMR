@@ -1,0 +1,42 @@
+name: "Cherry MX Black"
+author: "Cherry"
+description: "Heavy linear switch with smooth actuation and consistent feel"
+version: "1.0"
+
+ui:
+  icon: "⚫"
+  color: "linear-gradient(135deg, #4a4a4a 0%, #2c2c2c 50%, #000000 100%)"
+  category: "mechanical"
+
+audio_sources:
+  mx_black_key1:
+    type: "bundled"
+    path: "mx-black/press_key1.mp3"
+  mx_black_key2:
+    type: "bundled"
+    path: "mx-black/press_key2.mp3"
+  mx_black_key3:
+    type: "bundled"
+    path: "mx-black/press_key3.mp3"
+  mx_black_key4:
+    type: "bundled"
+    path: "mx-black/press_key4.mp3"
+  mx_black_key5:
+    type: "bundled"
+    path: "mx-black/press_key5.mp3"
+  mx_black_space:
+    type: "bundled"
+    path: "mx-black/press_space.mp3"
+  mx_black_enter:
+    type: "bundled"
+    path: "mx-black/press_enter.mp3"
+  mx_black_back:
+    type: "bundled"
+    path: "mx-black/press_back.mp3"
+
+key_mappings:
+  default: "mx_black_key1"
+  " ": "mx_black_space"
+  Enter: "mx_black_enter"
+  Backspace: "mx_black_back"
+  Delete: "mx_black_back"

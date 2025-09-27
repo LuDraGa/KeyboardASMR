@@ -1,0 +1,42 @@
+name: "Gateron Red Ink"
+author: "Gateron"
+description: "Ultra-smooth linear switch perfect for gaming and fast typing"
+version: "1.0"
+
+ui:
+  icon: "❤️"
+  color: "linear-gradient(135deg, #ff4757 0%, #ff3742 50%, #c44569 100%)"
+  category: "mechanical"
+
+audio_sources:
+  gateron_red_key1:
+    type: "bundled"
+    path: "gateron-red-ink/press_key1.mp3"
+  gateron_red_key2:
+    type: "bundled"
+    path: "gateron-red-ink/press_key2.mp3"
+  gateron_red_key3:
+    type: "bundled"
+    path: "gateron-red-ink/press_key3.mp3"
+  gateron_red_key4:
+    type: "bundled"
+    path: "gateron-red-ink/press_key4.mp3"
+  gateron_red_key5:
+    type: "bundled"
+    path: "gateron-red-ink/press_key5.mp3"
+  gateron_red_space:
+    type: "bundled"
+    path: "gateron-red-ink/press_space.mp3"
+  gateron_red_enter:
+    type: "bundled"
+    path: "gateron-red-ink/press_enter.mp3"
+  gateron_red_back:
+    type: "bundled"
+    path: "gateron-red-ink/press_back.mp3"
+
+key_mappings:
+  default: "gateron_red_key1"
+  " ": "gateron_red_space"
+  Enter: "gateron_red_enter"
+  Backspace: "gateron_red_back"
+  Delete: "gateron_red_back"

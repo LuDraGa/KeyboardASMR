@@ -1,0 +1,42 @@
+name: "Holy Panda"
+author: "Drop"
+description: "Legendary tactile switch with pronounced bump and satisfying thock"
+version: "1.0"
+
+ui:
+  icon: "🐼"
+  color: "linear-gradient(135deg, #ffffff 0%, #f0f0f0 30%, #2c2c2c 70%, #000000 100%)"
+  category: "mechanical"
+
+audio_sources:
+  holy_panda_key1:
+    type: "bundled"
+    path: "holy-panda/press_key1.mp3"
+  holy_panda_key2:
+    type: "bundled"
+    path: "holy-panda/press_key2.mp3"
+  holy_panda_key3:
+    type: "bundled"
+    path: "holy-panda/press_key3.mp3"
+  holy_panda_key4:
+    type: "bundled"
+    path: "holy-panda/press_key4.mp3"
+  holy_panda_key5:
+    type: "bundled"
+    path: "holy-panda/press_key5.mp3"
+  holy_panda_space:
+    type: "bundled"
+    path: "holy-panda/press_space.mp3"
+  holy_panda_enter:
+    type: "bundled"
+    path: "holy-panda/press_enter.mp3"
+  holy_panda_back:
+    type: "bundled"
+    path: "holy-panda/press_back.mp3"
+
+key_mappings:
+  default: "holy_panda_key1"
+  " ": "holy_panda_space"
+  Enter: "holy_panda_enter"
+  Backspace: "holy_panda_back"
+  Delete: "holy_panda_back"

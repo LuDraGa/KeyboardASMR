@@ -1,0 +1,45 @@
+name: "Gateron Telios V2"
+author: "Gateron"
+description: "Premium linear switch with factory lubrication and smooth keystroke"
+version: "1.0"
+
+ui:
+  icon: "✨"
+  color: "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)"
+  category: "mechanical"
+
+audio_sources:
+  telios_key1:
+    type: "bundled"
+    path: "telios-v2/key1.wav"
+  telios_key2:
+    type: "bundled"
+    path: "telios-v2/key2.wav"
+  telios_key3:
+    type: "bundled"
+    path: "telios-v2/key3.wav"
+  telios_key4:
+    type: "bundled"
+    path: "telios-v2/key4.wav"
+  telios_key5:
+    type: "bundled"
+    path: "telios-v2/key5.wav"
+  telios_key6:
+    type: "bundled"
+    path: "telios-v2/key6.wav"
+  telios_space:
+    type: "bundled"
+    path: "telios-v2/space.wav"
+  telios_enter:
+    type: "bundled"
+    path: "telios-v2/ent.wav"
+  telios_back:
+    type: "bundled"
+    path: "telios-v2/back.wav"
+
+key_mappings:
+  default: "telios_key1"
+  " ": "telios_space"
+  Enter: "telios_enter"
+  Backspace: "telios_back"
+  Delete: "telios_back"

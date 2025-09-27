@@ -1,0 +1,33 @@
+name: "Modern Typewriter"
+author: "ClassicKeys"
+description: "Enhanced vintage typewriter sounds with crisp mechanical feedback and satisfying dings"
+version: "1.0"
+
+ui:
+  icon: "📝"
+  color: "linear-gradient(135deg, #8b4513 0%, #a0522d 50%, #d2691e 100%)"
+  category: "vintage"
+
+audio_sources:
+  typewriter_key:
+    type: "bundled"
+    path: "new-typewriter/key.wav"
+  typewriter_key2:
+    type: "bundled"
+    path: "new-typewriter/key2.wav"
+  typewriter_space:
+    type: "bundled"
+    path: "new-typewriter/space.wav"
+  typewriter_enter:
+    type: "bundled"
+    path: "new-typewriter/enter.wav"
+  typewriter_delete:
+    type: "bundled"
+    path: "new-typewriter/delete.wav"
+
+key_mappings:
+  default: "typewriter_key"
+  " ": "typewriter_space"
+  Enter: "typewriter_enter"
+  Backspace: "typewriter_delete"
+  Delete: "typewriter_delete"

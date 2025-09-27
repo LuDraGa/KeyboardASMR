@@ -18,7 +18,29 @@ class ProfileLoader {
     const profiles = [];
 
     // Define bundled profile files
-    const bundledProfileFiles = ['typewriter.yaml', 'soft.yaml', 'medium.yaml', 'hard.yaml', 'drum.yaml', 'pops.yaml'];
+    const bundledProfileFiles = [
+      'typewriter.yaml',
+      'soft.yaml',
+      'medium.yaml',
+      'hard.yaml',
+      'drum.yaml',
+      'pops.yaml',
+      'alpaca.yaml',
+      'apex-pro-tkl-v2.yaml',
+      'banana-split.yaml',
+      'gateron-black-ink.yaml',
+      'gateron-red-ink.yaml',
+      'holy-panda.yaml',
+      'ios.yaml',
+      'mx-black.yaml',
+      'mx-blue.yaml',
+      'mx-brown.yaml',
+      'mx-speed-silver.yaml',
+      'nk-cream.yaml',
+      'opera-gx.yaml',
+      'telios-v2.yaml',
+      'new-typewriter.yaml',
+    ];
 
     for (const filename of bundledProfileFiles) {
       try {

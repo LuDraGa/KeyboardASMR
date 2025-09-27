@@ -1,0 +1,27 @@
+name: "iOS Keyboard"
+author: "Apple"
+description: "Classic iPhone keyboard sounds for that familiar mobile typing experience"
+version: "1.0"
+
+ui:
+  icon: "📱"
+  color: "linear-gradient(135deg, #007aff 0%, #5856d6 50%, #af52de 100%)"
+  category: "mobile"
+
+audio_sources:
+  ios_key:
+    type: "bundled"
+    path: "ios/key.mp3"
+  ios_alt:
+    type: "bundled"
+    path: "ios/alt.mp3"
+  ios_back:
+    type: "bundled"
+    path: "ios/back.mp3"
+
+key_mappings:
+  default: "ios_key"
+  " ": "ios_alt"
+  Enter: "ios_alt"
+  Backspace: "ios_back"
+  Delete: "ios_back"

@@ -1,0 +1,33 @@
+name: "SteelSeries Apex Pro TKL"
+author: "SteelSeries"
+description: "Premium gaming mechanical keyboard with OmniPoint adjustable switches"
+version: "1.0"
+
+ui:
+  icon: "⌨️"
+  color: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
+  category: "gaming"
+
+audio_sources:
+  apex_key1:
+    type: "bundled"
+    path: "apex-pro-tkl-v2/key1.wav"
+  apex_key3:
+    type: "bundled"
+    path: "apex-pro-tkl-v2/key3.wav"
+  apex_key4:
+    type: "bundled"
+    path: "apex-pro-tkl-v2/key4.wav"
+  apex_space:
+    type: "bundled"
+    path: "apex-pro-tkl-v2/space.wav"
+  apex_enter:
+    type: "bundled"
+    path: "apex-pro-tkl-v2/enter.wav"
+
+key_mappings:
+  default: "apex_key1"
+  " ": "apex_space"
+  Enter: "apex_enter"
+  Backspace: "apex_key4"
+  Delete: "apex_key4"
