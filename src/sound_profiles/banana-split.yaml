@@ -34,6 +34,6 @@ audio_sources:
 key_mappings:
   default: "banana_key1"
   " ": "banana_key6"
-  Enter: "banana_key7"
-  Backspace: "banana_key5"
-  Delete: "banana_key5"
+  "Enter": "banana_key7"
+  "Backspace": "banana_key5"
+  "Delete": "banana_key5"

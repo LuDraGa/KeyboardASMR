@@ -37,6 +37,6 @@ audio_sources:
 key_mappings:
   default: "holy_panda_key1"
   " ": "holy_panda_space"
-  Enter: "holy_panda_enter"
-  Backspace: "holy_panda_back"
-  Delete: "holy_panda_back"
+  "Enter": "holy_panda_enter"
+  "Backspace": "holy_panda_back"
+  "Delete": "holy_panda_back"

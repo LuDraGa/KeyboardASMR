@@ -31,6 +31,6 @@ audio_sources:
 key_mappings:
   default: "mx_speed_key1"
   " ": "mx_speed_key5"
-  Enter: "mx_speed_key6"
-  Backspace: "mx_speed_key4"
-  Delete: "mx_speed_key4"
+  "Enter": "mx_speed_key6"
+  "Backspace": "mx_speed_key4"
+  "Delete": "mx_speed_key4"

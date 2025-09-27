@@ -27,6 +27,6 @@ audio_sources:
 
 key_mappings:
   default: "snare"
-  Enter: "kick"
-  Backspace: "open_snare"
+  "Enter": "kick"
+  "Backspace": "open_snare"
   " ": "tom"

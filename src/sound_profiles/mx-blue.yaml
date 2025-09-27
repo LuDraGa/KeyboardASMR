@@ -28,6 +28,6 @@ audio_sources:
 key_mappings:
   default: "mx_blue_key1"
   " ": "mx_blue_key4"
-  Enter: "mx_blue_key5"
-  Backspace: "mx_blue_key3"
-  Delete: "mx_blue_key3"
+  "Enter": "mx_blue_key5"
+  "Backspace": "mx_blue_key3"
+  "Delete": "mx_blue_key3"

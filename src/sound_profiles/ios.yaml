@@ -22,6 +22,6 @@ audio_sources:
 key_mappings:
   default: "ios_key"
   " ": "ios_alt"
-  Enter: "ios_alt"
-  Backspace: "ios_back"
-  Delete: "ios_back"
+  "Enter": "ios_alt"
+  "Backspace": "ios_back"
+  "Delete": "ios_back"

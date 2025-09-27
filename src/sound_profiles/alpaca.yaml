@@ -37,6 +37,6 @@ audio_sources:
 key_mappings:
   default: "alpaca_key1"
   " ": "alpaca_space"
-  Enter: "alpaca_enter"
-  Backspace: "alpaca_back"
-  Delete: "alpaca_back"
+  "Enter": "alpaca_enter"
+  "Backspace": "alpaca_back"
+  "Delete": "alpaca_back"

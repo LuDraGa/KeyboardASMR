@@ -40,6 +40,6 @@ audio_sources:
 key_mappings:
   default: "telios_key1"
   " ": "telios_space"
-  Enter: "telios_enter"
-  Backspace: "telios_back"
-  Delete: "telios_back"
+  "Enter": "telios_enter"
+  "Backspace": "telios_back"
+  "Delete": "telios_back"
