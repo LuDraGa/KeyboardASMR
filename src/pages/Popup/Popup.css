@@ -117,6 +117,19 @@ body {
   transform: translateY(-2px);
 }
 
+.discord-btn {
+  background: #5965f2 !important;
+}
+
+.discord-btn svg {
+  color: #ffffff;
+  fill: #ffffff;
+}
+
+.discord-btn:hover {
+  background: #4752c4 !important;
+}
+
 /* Sound Profiles Section */
 .sound-profiles {
   padding: 0.8rem 0.8rem;
@@ -136,6 +149,14 @@ body {
   opacity: 0.8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.current-profile {
+  font-weight: 500;
+  text-transform: none;
+  opacity: 0.6;
+  font-size: 0.75rem;
+  letter-spacing: normal;
 }
 
 .profiles-grid {
