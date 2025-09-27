@@ -126,6 +126,7 @@ body {
   box-sizing: border-box;
   min-height: 0;
   width: 100%;
+  max-height: 280px; /* Show ~6.5 profiles to hint at more content */
 }
 
 .sound-profiles h2 {
@@ -609,19 +610,23 @@ kbd {
 }
 
 /* Scrollbar styling */
-.popup-container::-webkit-scrollbar {
+.popup-container::-webkit-scrollbar,
+.sound-profiles::-webkit-scrollbar {
   width: 0.5rem;
 }
 
-.popup-container::-webkit-scrollbar-track {
+.popup-container::-webkit-scrollbar-track,
+.sound-profiles::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
 }
 
-.popup-container::-webkit-scrollbar-thumb {
+.popup-container::-webkit-scrollbar-thumb,
+.sound-profiles::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 0.25rem;
 }
 
-.popup-container::-webkit-scrollbar-thumb:hover {
+.popup-container::-webkit-scrollbar-thumb:hover,
+.sound-profiles::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }

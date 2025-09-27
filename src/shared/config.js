@@ -88,7 +88,7 @@ export const getSoundSets = async () => {
 
 // Default settings
 export const DEFAULT_SETTINGS = {
-  soundSet: 'medium',
+  soundSet: 'novelkeys_cream',
   volume: 0.7,
   isMuted: false,
 };
