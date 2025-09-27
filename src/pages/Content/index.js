@@ -9,18 +9,35 @@ let volume = DEFAULT_SETTINGS.volume;
 let audioContext = null;
 let soundBuffers = {};
 let isAudioInitialized = false;
+let audioContextResumed = false;
 
-// Initialize Web Audio API
+// Initialize Web Audio API (creates suspended context)
 async function initAudio() {
   if (isAudioInitialized) return;
 
   try {
+    // Create AudioContext in suspended state (allowed without user gesture)
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     await loadSounds();
     isAudioInitialized = true;
     console.log('Keyboard ASMR: Audio initialized successfully');
   } catch (error) {
     console.error('Keyboard ASMR: Failed to initialize audio:', error);
+  }
+}
+
+// Resume AudioContext on first user interaction
+async function ensureAudioContextResumed() {
+  if (!audioContext || audioContextResumed) return;
+
+  try {
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+    audioContextResumed = true;
+    console.log('Keyboard ASMR: AudioContext resumed');
+  } catch (error) {
+    console.error('Keyboard ASMR: Failed to resume AudioContext:', error);
   }
 }
 
@@ -54,8 +71,11 @@ async function loadSounds() {
 }
 
 // Play sound directly in content script
-function playSound(key) {
+async function playSound(key) {
   if (isMuted || !isAudioInitialized) return;
+
+  // Ensure AudioContext is resumed before playing
+  await ensureAudioContextResumed();
 
   const buffer = soundBuffers[currentSoundSet]?.[key] || soundBuffers[currentSoundSet]?.default;
   if (!buffer || !audioContext) return;
@@ -138,7 +158,7 @@ window.addEventListener('message', async (event) => {
 
     // Play sound directly (only if not muted)
     if (!isMuted) {
-      playSound(event.data.data.key);
+      await playSound(event.data.data.key);
     }
 
     // Also notify background for icon updates (optional)
@@ -154,15 +174,10 @@ window.addEventListener('message', async (event) => {
 });
 
 // Load initial settings
-chrome.storage.sync.get([STORAGE_KEYS.SOUND_SET, STORAGE_KEYS.VOLUME, STORAGE_KEYS.IS_MUTED], async (result) => {
+chrome.storage.sync.get([STORAGE_KEYS.SOUND_SET, STORAGE_KEYS.VOLUME, STORAGE_KEYS.IS_MUTED], (result) => {
   currentSoundSet = result[STORAGE_KEYS.SOUND_SET] || DEFAULT_SETTINGS.soundSet;
   volume = result[STORAGE_KEYS.VOLUME] !== undefined ? result[STORAGE_KEYS.VOLUME] / 100 : DEFAULT_SETTINGS.volume;
   isMuted = result[STORAGE_KEYS.IS_MUTED] ?? DEFAULT_SETTINGS.isMuted;
-
-  // Initialize audio if not muted
-  if (!isMuted) {
-    await initAudio();
-  }
 });
 
 // Listen for setting changes
@@ -180,10 +195,6 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
     }
     if (changes[STORAGE_KEYS.IS_MUTED]) {
       isMuted = changes[STORAGE_KEYS.IS_MUTED].newValue;
-      // Initialize audio when unmuted
-      if (!isMuted && !isAudioInitialized) {
-        await initAudio();
-      }
     }
   }
 });
@@ -192,9 +203,6 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === MESSAGE_TYPES.STATE_CHANGE) {
     isMuted = message.isMuted;
-    if (!isMuted && !isAudioInitialized) {
-      initAudio();
-    }
   }
 });
 
@@ -207,7 +215,7 @@ document.addEventListener('keydown', async (event) => {
     await initAudio();
   }
 
-  playSound(event.key);
+  await playSound(event.key);
 
   // Notify background
   chrome.runtime
@@ -231,5 +239,11 @@ if (document.documentElement) {
   });
   observer.observe(document, { childList: true, subtree: true });
 }
+
+// Initialize audio context early (in suspended state)
+// This avoids the "user gesture" requirement since context starts suspended
+initAudio().catch(error => {
+  console.error('Keyboard ASMR: Failed to pre-initialize audio:', error);
+});
 
 console.log('Keyboard ASMR: Content script loaded');
