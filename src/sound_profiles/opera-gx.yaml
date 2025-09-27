@@ -46,6 +46,6 @@ audio_sources:
 key_mappings:
   default: "opera_key1"
   " ": "opera_space"
-  Enter: "opera_enter"
-  Backspace: "opera_backspace"
-  Delete: "opera_backspace"
+  "Enter": "opera_enter"
+  "Backspace": "opera_backspace"
+  "Delete": "opera_backspace"

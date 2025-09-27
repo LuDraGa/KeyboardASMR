@@ -40,6 +40,6 @@ audio_sources:
 key_mappings:
   default: "nk_cream_a"
   " ": "nk_cream_space"
-  Enter: "nk_cream_enter"
-  Backspace: "nk_cream_backspace"
-  Delete: "nk_cream_backspace"
+  "Enter": "nk_cream_enter"
+  "Backspace": "nk_cream_backspace"
+  "Delete": "nk_cream_backspace"

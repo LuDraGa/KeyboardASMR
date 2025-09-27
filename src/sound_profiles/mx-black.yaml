@@ -37,6 +37,6 @@ audio_sources:
 key_mappings:
   default: "mx_black_key1"
   " ": "mx_black_space"
-  Enter: "mx_black_enter"
-  Backspace: "mx_black_back"
-  Delete: "mx_black_back"
+  "Enter": "mx_black_enter"
+  "Backspace": "mx_black_back"
+  "Delete": "mx_black_back"

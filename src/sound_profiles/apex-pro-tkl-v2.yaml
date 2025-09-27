@@ -28,6 +28,6 @@ audio_sources:
 key_mappings:
   default: "apex_key1"
   " ": "apex_space"
-  Enter: "apex_enter"
-  Backspace: "apex_key4"
-  Delete: "apex_key4"
+  "Enter": "apex_enter"
+  "Backspace": "apex_key4"
+  "Delete": "apex_key4"

@@ -37,6 +37,6 @@ audio_sources:
 key_mappings:
   default: "gateron_red_key1"
   " ": "gateron_red_space"
-  Enter: "gateron_red_enter"
-  Backspace: "gateron_red_back"
-  Delete: "gateron_red_back"
+  "Enter": "gateron_red_enter"
+  "Backspace": "gateron_red_back"
+  "Delete": "gateron_red_back"

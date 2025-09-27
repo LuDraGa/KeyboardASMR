@@ -23,5 +23,5 @@ audio_sources:
 
 key_mappings:
   default: "key_press"
-  Enter: "enter_key"
-  Backspace: "backspace_key"
+  "Enter": "enter_key"
+  "Backspace": "backspace_key"

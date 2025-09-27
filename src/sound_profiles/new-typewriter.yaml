@@ -28,6 +28,6 @@ audio_sources:
 key_mappings:
   default: "typewriter_key"
   " ": "typewriter_space"
-  Enter: "typewriter_enter"
-  Backspace: "typewriter_delete"
-  Delete: "typewriter_delete"
+  "Enter": "typewriter_enter"
+  "Backspace": "typewriter_delete"
+  "Delete": "typewriter_delete"
