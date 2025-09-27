@@ -9,7 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build extension**: `npm run build` - Creates production build in `/build` directory
 - **Development server**: `npm run start` - Runs webpack dev server for hot reload during development
 - **Format code**: `npm run prettier` - Formats all JS/JSX/TS/TSX/JSON/CSS/SCSS/MD files
-- **Lint code**: ESLint is configured but no lint script in package.json - run manually if needed
+- **Lint code**: `npm run lint` - Runs ESLint to check for code issues
+- **Lint and fix**: `npm run lint:fix` - Runs ESLint and automatically fixes fixable issues
 
 ### Environment Setup
 
