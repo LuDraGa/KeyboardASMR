@@ -16,6 +16,8 @@ const Popup = () => {
       // Load profiles
       try {
         const profiles = await profileLoader.loadBundledProfiles();
+        // Sort profiles alphabetically by display name
+        profiles.sort((a, b) => a.name.localeCompare(b.name));
         setSoundProfiles(profiles);
       } catch (error) {
         console.error('Failed to load profiles:', error);
@@ -25,7 +27,7 @@ const Popup = () => {
       chrome.storage.sync.get(
         [STORAGE_KEYS.SOUND_SET, STORAGE_KEYS.VOLUME, STORAGE_KEYS.IS_MUTED, STORAGE_KEYS.THEME],
         (result) => {
-          if (result[STORAGE_KEYS.SOUND_SET]) setSoundSet(result[STORAGE_KEYS.SOUND_SET]);
+          setSoundSet(result[STORAGE_KEYS.SOUND_SET] || DEFAULT_SETTINGS.soundSet);
           if (result[STORAGE_KEYS.VOLUME] !== undefined) setVolume(result[STORAGE_KEYS.VOLUME]);
           if (result[STORAGE_KEYS.IS_MUTED] !== undefined) setIsMuted(result[STORAGE_KEYS.IS_MUTED]);
           if (result[STORAGE_KEYS.THEME]) setTheme(result[STORAGE_KEYS.THEME]);
