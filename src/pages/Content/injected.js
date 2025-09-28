@@ -35,6 +35,7 @@
       return;
     }
     lastKeyTime = currentTime;
+    lastKey = event.key;
 
     // Check if we should capture from this element
     if (!shouldCaptureFromElement(event.target)) {
