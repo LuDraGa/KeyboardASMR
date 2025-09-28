@@ -1,8 +1,8 @@
 import { SOUND_SETS, MESSAGE_TYPES } from '../../shared/config';
 
 let audioContext = null;
-let soundBuffers = {};
-let volume = 0.7;
+const soundBuffers = {};
+// const volume = 0.7; // Legacy: this file is no longer used
 
 // Initialize audio context
 async function initAudio() {

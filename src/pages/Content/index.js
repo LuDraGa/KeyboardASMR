@@ -7,7 +7,7 @@ let volume = DEFAULT_SETTINGS.volume;
 
 // Audio context and buffers
 let audioContext = null;
-let soundBuffers = {};
+const soundBuffers = {};
 let isAudioInitialized = false;
 let audioContextResumed = false;
 
@@ -108,41 +108,41 @@ function injectScript() {
   (document.head || document.documentElement).appendChild(script);
 }
 
-// Alternative injection method using inline script
-function injectInlineScript() {
-  const scriptContent = `(${injectedFunction.toString()})();`;
-  const script = document.createElement('script');
-  script.textContent = scriptContent;
-  (document.head || document.documentElement).appendChild(script);
-  script.remove();
-}
+// Alternative injection method using inline script (backup - not currently used)
+// function injectInlineScript() {
+//   const scriptContent = `(${injectedFunction.toString()})();`;
+//   const script = document.createElement('script');
+//   script.textContent = scriptContent;
+//   (document.head || document.documentElement).appendChild(script);
+//   script.remove();
+// }
 
-// The function to be injected (simplified version for inline injection)
-function injectedFunction() {
-  const MESSAGE_SOURCE = 'keyboard-asmr-injected';
-  const DEBOUNCE_DELAY = 30;
-  let lastKeyTime = 0;
-
-  function handleKeyboardEvent(event) {
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
-
-    const currentTime = Date.now();
-    if (currentTime - lastKeyTime < DEBOUNCE_DELAY) return;
-    lastKeyTime = currentTime;
-
-    window.postMessage(
-      {
-        source: MESSAGE_SOURCE,
-        type: 'KEYPRESS',
-        data: { key: event.key, timestamp: currentTime },
-      },
-      '*'
-    );
-  }
-
-  window.addEventListener('keydown', handleKeyboardEvent, true);
-  document.addEventListener('keydown', handleKeyboardEvent, true);
-}
+// Legacy injected function (backup - not currently used)
+// function injectedFunction() {
+//   const MESSAGE_SOURCE = 'keyboard-asmr-injected';
+//   const DEBOUNCE_DELAY = 30;
+//   let lastKeyTime = 0;
+//
+//   function handleKeyboardEvent(event) {
+//     if (event.ctrlKey || event.metaKey || event.altKey) return;
+//
+//     const currentTime = Date.now();
+//     if (currentTime - lastKeyTime < DEBOUNCE_DELAY) return;
+//     lastKeyTime = currentTime;
+//
+//     window.postMessage(
+//       {
+//         source: MESSAGE_SOURCE,
+//         type: 'KEYPRESS',
+//         data: { key: event.key, timestamp: currentTime },
+//       },
+//       '*'
+//     );
+//   }
+//
+//   window.addEventListener('keydown', handleKeyboardEvent, true);
+//   document.addEventListener('keydown', handleKeyboardEvent, true);
+// }
 
 // Listen for messages from injected script
 window.addEventListener('message', async event => {

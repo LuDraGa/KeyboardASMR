@@ -101,11 +101,7 @@ var options = {
           },
           {
             loader: require.resolve('babel-loader'),
-            options: {
-              presets: ['@babel/preset-env', '@babel/preset-react'],
-              // Disable React Refresh for Chrome extensions to prevent dev server injection
-              plugins: [],
-            },
+            // Use .babelrc for configuration (better developer visibility)
           },
         ],
         exclude: /node_modules/,

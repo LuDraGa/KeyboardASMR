@@ -2,8 +2,8 @@ import { DEFAULT_SETTINGS, MESSAGE_TYPES, STORAGE_KEYS } from '../../shared/conf
 
 console.log('Background service worker initialized');
 
-let currentSoundSet = DEFAULT_SETTINGS.soundSet;
-let volume = DEFAULT_SETTINGS.volume;
+// Note: currentSoundSet and volume are no longer needed in background
+// since audio handling moved to content scripts
 let isMuted = DEFAULT_SETTINGS.isMuted;
 
 // Offscreen document no longer needed - audio is handled in content script
@@ -79,11 +79,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.storage.sync.get(
   [STORAGE_KEYS.SOUND_SET, STORAGE_KEYS.VOLUME, STORAGE_KEYS.IS_MUTED],
   async result => {
-    currentSoundSet = result[STORAGE_KEYS.SOUND_SET] || DEFAULT_SETTINGS.soundSet;
-    volume =
-      result[STORAGE_KEYS.VOLUME] !== undefined
-        ? result[STORAGE_KEYS.VOLUME] / 100
-        : DEFAULT_SETTINGS.volume;
+    // Audio settings are now handled in content scripts
+    // currentSoundSet and volume are no longer needed here
     isMuted = result[STORAGE_KEYS.IS_MUTED] ?? DEFAULT_SETTINGS.isMuted;
 
     // Offscreen document no longer needed as audio is handled in content script
@@ -95,12 +92,8 @@ chrome.storage.sync.get(
 // Listen for setting changes
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'sync') {
-    if (changes[STORAGE_KEYS.SOUND_SET]) {
-      currentSoundSet = changes[STORAGE_KEYS.SOUND_SET].newValue;
-    }
-    if (changes[STORAGE_KEYS.VOLUME]) {
-      volume = changes[STORAGE_KEYS.VOLUME].newValue / 100;
-    }
+    // Audio settings changes are handled in content scripts
+    // No need to track currentSoundSet or volume in background
     if (changes[STORAGE_KEYS.IS_MUTED]) {
       isMuted = changes[STORAGE_KEYS.IS_MUTED].newValue;
       updateExtensionState();
