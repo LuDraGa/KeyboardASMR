@@ -8,7 +8,12 @@ export let SOUND_SETS = {};
 const isContentScript = () => {
   try {
     // Content scripts can access chrome.runtime but not chrome.runtime.getManifest
-    return typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL && !chrome.runtime.getManifest; // This will be undefined in content scripts
+    return (
+      typeof chrome !== 'undefined' &&
+      chrome.runtime &&
+      chrome.runtime.getURL &&
+      !chrome.runtime.getManifest
+    ); // This will be undefined in content scripts
   } catch (e) {
     return true; // Assume content script if chrome APIs are restricted
   }

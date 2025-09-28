@@ -17,7 +17,7 @@ async function initAudio() {
 // Load and cache sounds
 async function loadSounds() {
   // Function to fetch and decode audio
-  const loadSound = async (url) => {
+  const loadSound = async url => {
     try {
       const response = await fetch(chrome.runtime.getURL(url));
       const arrayBuffer = await response.arrayBuffer();

@@ -76,15 +76,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 // Initialize settings
-chrome.storage.sync.get([STORAGE_KEYS.SOUND_SET, STORAGE_KEYS.VOLUME, STORAGE_KEYS.IS_MUTED], async (result) => {
-  currentSoundSet = result[STORAGE_KEYS.SOUND_SET] || DEFAULT_SETTINGS.soundSet;
-  volume = result[STORAGE_KEYS.VOLUME] !== undefined ? result[STORAGE_KEYS.VOLUME] / 100 : DEFAULT_SETTINGS.volume;
-  isMuted = result[STORAGE_KEYS.IS_MUTED] ?? DEFAULT_SETTINGS.isMuted;
+chrome.storage.sync.get(
+  [STORAGE_KEYS.SOUND_SET, STORAGE_KEYS.VOLUME, STORAGE_KEYS.IS_MUTED],
+  async result => {
+    currentSoundSet = result[STORAGE_KEYS.SOUND_SET] || DEFAULT_SETTINGS.soundSet;
+    volume =
+      result[STORAGE_KEYS.VOLUME] !== undefined
+        ? result[STORAGE_KEYS.VOLUME] / 100
+        : DEFAULT_SETTINGS.volume;
+    isMuted = result[STORAGE_KEYS.IS_MUTED] ?? DEFAULT_SETTINGS.isMuted;
 
-  // Offscreen document no longer needed as audio is handled in content script
-  // await createOffscreenDocument();
-  updateExtensionState();
-});
+    // Offscreen document no longer needed as audio is handled in content script
+    // await createOffscreenDocument();
+    updateExtensionState();
+  }
+);
 
 // Listen for setting changes
 chrome.storage.onChanged.addListener((changes, area) => {
