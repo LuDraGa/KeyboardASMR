@@ -75,7 +75,7 @@
   // Handle dynamically added iframes
   function attachToIframes() {
     const iframes = document.querySelectorAll('iframe');
-    iframes.forEach((iframe) => {
+    iframes.forEach(iframe => {
       try {
         // Only works for same-origin iframes
         if (iframe.contentWindow) {
@@ -88,10 +88,10 @@
   }
 
   // Monitor for new iframes
-  const observer = new MutationObserver((mutations) => {
+  const observer = new MutationObserver(mutations => {
     let hasNewIframes = false;
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
+    mutations.forEach(mutation => {
+      mutation.addedNodes.forEach(node => {
         if (node.tagName === 'IFRAME') {
           hasNewIframes = true;
         }
@@ -127,7 +127,7 @@
     // CodeMirror editors
     if (window.CodeMirror) {
       const editors = document.querySelectorAll('.CodeMirror');
-      editors.forEach((editor) => {
+      editors.forEach(editor => {
         if (editor.CodeMirror) {
           editor.CodeMirror.on('keydown', (cm, event) => {
             handleKeyboardEvent(event);
@@ -143,7 +143,7 @@
         const monacoEditors = document.querySelectorAll('.monaco-editor');
         if (monacoEditors.length > 0) {
           clearInterval(checkMonacoEditors);
-          monacoEditors.forEach((editor) => {
+          monacoEditors.forEach(editor => {
             editor.addEventListener('keydown', handleKeyboardEvent, true);
           });
         }

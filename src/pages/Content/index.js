@@ -43,7 +43,7 @@ async function ensureAudioContextResumed() {
 
 // Load and cache sounds
 async function loadSounds() {
-  const loadSound = async (url) => {
+  const loadSound = async url => {
     try {
       const response = await fetch(chrome.runtime.getURL(url));
       const arrayBuffer = await response.arrayBuffer();
@@ -145,7 +145,7 @@ function injectedFunction() {
 }
 
 // Listen for messages from injected script
-window.addEventListener('message', async (event) => {
+window.addEventListener('message', async event => {
   // Only accept messages from the same window
   if (event.source !== window) return;
 
@@ -174,11 +174,17 @@ window.addEventListener('message', async (event) => {
 });
 
 // Load initial settings
-chrome.storage.sync.get([STORAGE_KEYS.SOUND_SET, STORAGE_KEYS.VOLUME, STORAGE_KEYS.IS_MUTED], (result) => {
-  currentSoundSet = result[STORAGE_KEYS.SOUND_SET] || DEFAULT_SETTINGS.soundSet;
-  volume = result[STORAGE_KEYS.VOLUME] !== undefined ? result[STORAGE_KEYS.VOLUME] / 100 : DEFAULT_SETTINGS.volume;
-  isMuted = result[STORAGE_KEYS.IS_MUTED] ?? DEFAULT_SETTINGS.isMuted;
-});
+chrome.storage.sync.get(
+  [STORAGE_KEYS.SOUND_SET, STORAGE_KEYS.VOLUME, STORAGE_KEYS.IS_MUTED],
+  result => {
+    currentSoundSet = result[STORAGE_KEYS.SOUND_SET] || DEFAULT_SETTINGS.soundSet;
+    volume =
+      result[STORAGE_KEYS.VOLUME] !== undefined
+        ? result[STORAGE_KEYS.VOLUME] / 100
+        : DEFAULT_SETTINGS.volume;
+    isMuted = result[STORAGE_KEYS.IS_MUTED] ?? DEFAULT_SETTINGS.isMuted;
+  }
+);
 
 // Listen for setting changes
 chrome.storage.onChanged.addListener(async (changes, area) => {
@@ -207,7 +213,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 // Fallback: Also listen for keyboard events directly (for sites where injection fails)
-document.addEventListener('keydown', async (event) => {
+document.addEventListener('keydown', async event => {
   if (isMuted) return;
 
   // Initialize audio on first keypress if needed
@@ -242,7 +248,7 @@ if (document.documentElement) {
 
 // Initialize audio context early (in suspended state)
 // This avoids the "user gesture" requirement since context starts suspended
-initAudio().catch((error) => {
+initAudio().catch(error => {
   console.error('Keyboard ASMR: Failed to pre-initialize audio:', error);
 });
 

@@ -239,7 +239,7 @@ class ProfileLoader {
    */
   async loadAudioFromStorage(storageKey) {
     return new Promise((resolve, reject) => {
-      chrome.storage.local.get([storageKey], (result) => {
+      chrome.storage.local.get([storageKey], result => {
         if (chrome.runtime.lastError) {
           reject(chrome.runtime.lastError);
           return;
