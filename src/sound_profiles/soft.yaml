@@ -14,4 +14,5 @@ audio_sources:
     path: "keyboard/soft.wav"
 
 key_mappings:
-  default: "soft_press"
+  default:
+    keydown: "soft_press"

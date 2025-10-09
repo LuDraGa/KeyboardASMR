@@ -32,8 +32,13 @@ audio_sources:
     path: "banana-split/banana-l-7.wav"
 
 key_mappings:
-  default: "banana_key1"
-  " ": "banana_key6"
-  "Enter": "banana_key7"
-  "Backspace": "banana_key5"
-  "Delete": "banana_key5"
+  default:
+    keydown: "banana_key1"
+  " ":
+    keydown: "banana_key6"
+  "Enter":
+    keydown: "banana_key7"
+  "Backspace":
+    keydown: "banana_key5"
+  "Delete":
+    keydown: "banana_key5"

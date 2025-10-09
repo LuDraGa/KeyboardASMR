@@ -8,7 +8,7 @@
 
   // Debounce configuration
   const DEBOUNCE_DELAY = 30; // milliseconds
-  let lastKeyTime = 0;
+  const lastEventTimes = new Map(); // Track per (key, eventType) for debouncing
 
   // Check if we should capture events from this element
   function shouldCaptureFromElement(element) {
@@ -29,18 +29,30 @@
       return;
     }
 
-    // Debounce rapid keypresses
-    const currentTime = Date.now();
-    if (currentTime - lastKeyTime < DEBOUNCE_DELAY && event.key === lastKey) {
-      return;
-    }
-    lastKeyTime = currentTime;
-    lastKey = event.key;
-
     // Check if we should capture from this element
     if (!shouldCaptureFromElement(event.target)) {
       return;
     }
+
+    // Determine event type
+    let eventType;
+    if (event.type === 'keyup') {
+      eventType = 'keyup';
+    } else if (event.type === 'keydown') {
+      eventType = event.repeat ? 'keypress' : 'keydown';
+    } else {
+      return; // Unknown event type
+    }
+
+    // Debounce per (key, eventType) pair
+    const currentTime = Date.now();
+    const debounceKey = `${event.key}_${eventType}`;
+    const lastTime = lastEventTimes.get(debounceKey) || 0;
+
+    if (currentTime - lastTime < DEBOUNCE_DELAY) {
+      return;
+    }
+    lastEventTimes.set(debounceKey, currentTime);
 
     // Send message to content script
     window.postMessage(
@@ -50,6 +62,7 @@
         data: {
           key: event.key,
           code: event.code,
+          eventType: eventType,
           timestamp: currentTime,
           isComposing: event.isComposing || false,
           location: event.location,
@@ -65,13 +78,13 @@
     );
   }
 
-  let lastKey = '';
-
   // Attach event listeners with capture phase for maximum coverage
   window.addEventListener('keydown', handleKeyboardEvent, true);
+  window.addEventListener('keyup', handleKeyboardEvent, true);
 
   // Also attach to document for redundancy
   document.addEventListener('keydown', handleKeyboardEvent, true);
+  document.addEventListener('keyup', handleKeyboardEvent, true);
 
   // Handle dynamically added iframes
   function attachToIframes() {
@@ -81,6 +94,7 @@
         // Only works for same-origin iframes
         if (iframe.contentWindow) {
           iframe.contentWindow.addEventListener('keydown', handleKeyboardEvent, true);
+          iframe.contentWindow.addEventListener('keyup', handleKeyboardEvent, true);
         }
       } catch (e) {
         // Cross-origin iframe, skip
@@ -122,6 +136,7 @@
       const docsEditor = document.querySelector('.kix-appview-editor');
       if (docsEditor) {
         docsEditor.addEventListener('keydown', handleKeyboardEvent, true);
+        docsEditor.addEventListener('keyup', handleKeyboardEvent, true);
       }
     }
 
@@ -131,6 +146,9 @@
       editors.forEach(editor => {
         if (editor.CodeMirror) {
           editor.CodeMirror.on('keydown', (cm, event) => {
+            handleKeyboardEvent(event);
+          });
+          editor.CodeMirror.on('keyup', (cm, event) => {
             handleKeyboardEvent(event);
           });
         }
@@ -146,6 +164,7 @@
           clearInterval(checkMonacoEditors);
           monacoEditors.forEach(editor => {
             editor.addEventListener('keydown', handleKeyboardEvent, true);
+            editor.addEventListener('keyup', handleKeyboardEvent, true);
           });
         }
       }, 1000);

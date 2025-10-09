@@ -20,6 +20,9 @@ audio_sources:
     path: "pops/backspace.wav"
 
 key_mappings:
-  default: "pop_press"
-  "Enter": "pop_enter"
-  "Backspace": "pop_backspace"
+  default:
+    keydown: "pop_press"
+  "Enter":
+    keydown: "pop_enter"
+  "Backspace":
+    keydown: "pop_backspace"

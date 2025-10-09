@@ -44,8 +44,13 @@ audio_sources:
     path: "opera-gx/backspace.wav"
 
 key_mappings:
-  default: "opera_key1"
-  " ": "opera_space"
-  "Enter": "opera_enter"
-  "Backspace": "opera_backspace"
-  "Delete": "opera_backspace"
+  default:
+    keydown: "opera_key1"
+  " ":
+    keydown: "opera_space"
+  "Enter":
+    keydown: "opera_enter"
+  "Backspace":
+    keydown: "opera_backspace"
+  "Delete":
+    keydown: "opera_backspace"

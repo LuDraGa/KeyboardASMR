@@ -26,8 +26,13 @@ audio_sources:
     path: "apex-pro-tkl-v2/enter.wav"
 
 key_mappings:
-  default: "apex_key1"
-  " ": "apex_space"
-  "Enter": "apex_enter"
-  "Backspace": "apex_key4"
-  "Delete": "apex_key4"
+  default:
+    keydown: "apex_key1"
+  " ":
+    keydown: "apex_space"
+  "Enter":
+    keydown: "apex_enter"
+  "Backspace":
+    keydown: "apex_key4"
+  "Delete":
+    keydown: "apex_key4"

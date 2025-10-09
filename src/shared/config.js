@@ -25,24 +25,64 @@ export const initializeSoundSets = async () => {
   if (isContentScript()) {
     SOUND_SETS = {
       typewriter: {
-        default: 'assets/sounds/typewriter/key-press.wav',
-        Enter: 'assets/sounds/typewriter/enter-key.wav',
-        Backspace: 'assets/sounds/typewriter/backspace-tyr.wav',
+        default: {
+          keydown: 'assets/sounds/typewriter/key-press.wav',
+          keyup: null,
+          keypress: null,
+        },
+        Enter: {
+          keydown: 'assets/sounds/typewriter/enter-key.wav',
+          keyup: null,
+          keypress: null,
+        },
+        Backspace: {
+          keydown: 'assets/sounds/typewriter/backspace-tyr.wav',
+          keyup: null,
+          keypress: null,
+        },
       },
       soft: {
-        default: 'assets/sounds/keyboard/soft.wav',
+        default: {
+          keydown: 'assets/sounds/keyboard/soft.wav',
+          keyup: null,
+          keypress: null,
+        },
       },
       medium: {
-        default: 'assets/sounds/keyboard/medium.wav',
+        default: {
+          keydown: 'assets/sounds/keyboard/medium.wav',
+          keyup: null,
+          keypress: null,
+        },
       },
       hard: {
-        default: 'assets/sounds/keyboard/hard.wav',
+        default: {
+          keydown: 'assets/sounds/keyboard/hard.wav',
+          keyup: null,
+          keypress: null,
+        },
       },
       drum: {
-        default: 'assets/sounds/drum/snare1.wav',
-        Enter: 'assets/sounds/drum/kick1.wav',
-        Backspace: 'assets/sounds/drum/openSnare1.wav',
-        ' ': 'assets/sounds/drum/tom1.wav',
+        default: {
+          keydown: 'assets/sounds/drum/snare1.wav',
+          keyup: null,
+          keypress: null,
+        },
+        Enter: {
+          keydown: 'assets/sounds/drum/kick1.wav',
+          keyup: null,
+          keypress: null,
+        },
+        Backspace: {
+          keydown: 'assets/sounds/drum/openSnare1.wav',
+          keyup: null,
+          keypress: null,
+        },
+        ' ': {
+          keydown: 'assets/sounds/drum/tom1.wav',
+          keyup: null,
+          keypress: null,
+        },
       },
     };
     return;
@@ -60,24 +100,64 @@ export const initializeSoundSets = async () => {
     // Fallback to hardcoded configuration if profile loading fails
     SOUND_SETS = {
       typewriter: {
-        default: 'assets/sounds/typewriter/key-press.wav',
-        Enter: 'assets/sounds/typewriter/enter-key.wav',
-        Backspace: 'assets/sounds/typewriter/backspace-tyr.wav',
+        default: {
+          keydown: 'assets/sounds/typewriter/key-press.wav',
+          keyup: null,
+          keypress: null,
+        },
+        Enter: {
+          keydown: 'assets/sounds/typewriter/enter-key.wav',
+          keyup: null,
+          keypress: null,
+        },
+        Backspace: {
+          keydown: 'assets/sounds/typewriter/backspace-tyr.wav',
+          keyup: null,
+          keypress: null,
+        },
       },
       soft: {
-        default: 'assets/sounds/keyboard/soft.wav',
+        default: {
+          keydown: 'assets/sounds/keyboard/soft.wav',
+          keyup: null,
+          keypress: null,
+        },
       },
       medium: {
-        default: 'assets/sounds/keyboard/medium.wav',
+        default: {
+          keydown: 'assets/sounds/keyboard/medium.wav',
+          keyup: null,
+          keypress: null,
+        },
       },
       hard: {
-        default: 'assets/sounds/keyboard/hard.wav',
+        default: {
+          keydown: 'assets/sounds/keyboard/hard.wav',
+          keyup: null,
+          keypress: null,
+        },
       },
       drum: {
-        default: 'assets/sounds/drum/snare1.wav',
-        Enter: 'assets/sounds/drum/kick1.wav',
-        Backspace: 'assets/sounds/drum/openSnare1.wav',
-        ' ': 'assets/sounds/drum/tom1.wav',
+        default: {
+          keydown: 'assets/sounds/drum/snare1.wav',
+          keyup: null,
+          keypress: null,
+        },
+        Enter: {
+          keydown: 'assets/sounds/drum/kick1.wav',
+          keyup: null,
+          keypress: null,
+        },
+        Backspace: {
+          keydown: 'assets/sounds/drum/openSnare1.wav',
+          keyup: null,
+          keypress: null,
+        },
+        ' ': {
+          keydown: 'assets/sounds/drum/tom1.wav',
+          keyup: null,
+          keypress: null,
+        },
       },
     };
   }

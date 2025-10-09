@@ -35,8 +35,13 @@ audio_sources:
     path: "gateron-red-ink/press_back.mp3"
 
 key_mappings:
-  default: "gateron_red_key1"
-  " ": "gateron_red_space"
-  "Enter": "gateron_red_enter"
-  "Backspace": "gateron_red_back"
-  "Delete": "gateron_red_back"
+  default:
+    keydown: "gateron_red_key1"
+  " ":
+    keydown: "gateron_red_space"
+  "Enter":
+    keydown: "gateron_red_enter"
+  "Backspace":
+    keydown: "gateron_red_back"
+  "Delete":
+    keydown: "gateron_red_back"

@@ -26,8 +26,13 @@ audio_sources:
     path: "new-typewriter/delete.wav"
 
 key_mappings:
-  default: "typewriter_key"
-  " ": "typewriter_space"
-  "Enter": "typewriter_enter"
-  "Backspace": "typewriter_delete"
-  "Delete": "typewriter_delete"
+  default:
+    keydown: "typewriter_key"
+  " ":
+    keydown: "typewriter_space"
+  "Enter":
+    keydown: "typewriter_enter"
+  "Backspace":
+    keydown: "typewriter_delete"
+  "Delete":
+    keydown: "typewriter_delete"

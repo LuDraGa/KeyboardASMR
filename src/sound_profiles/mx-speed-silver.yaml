@@ -29,8 +29,13 @@ audio_sources:
     path: "mx-speed-silver/mx-speed-silver-6.wav"
 
 key_mappings:
-  default: "mx_speed_key1"
-  " ": "mx_speed_key5"
-  "Enter": "mx_speed_key6"
-  "Backspace": "mx_speed_key4"
-  "Delete": "mx_speed_key4"
+  default:
+    keydown: "mx_speed_key1"
+  " ":
+    keydown: "mx_speed_key5"
+  "Enter":
+    keydown: "mx_speed_key6"
+  "Backspace":
+    keydown: "mx_speed_key4"
+  "Delete":
+    keydown: "mx_speed_key4"

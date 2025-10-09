@@ -20,8 +20,13 @@ audio_sources:
     path: "ios/back.mp3"
 
 key_mappings:
-  default: "ios_key"
-  " ": "ios_alt"
-  "Enter": "ios_alt"
-  "Backspace": "ios_back"
-  "Delete": "ios_back"
+  default:
+    keydown: "ios_key"
+  " ":
+    keydown: "ios_alt"
+  "Enter":
+    keydown: "ios_alt"
+  "Backspace":
+    keydown: "ios_back"
+  "Delete":
+    keydown: "ios_back"

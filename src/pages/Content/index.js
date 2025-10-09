@@ -58,11 +58,28 @@ async function loadSounds() {
     // Get sound sets from profile loader (with fallback)
     const SOUND_SETS = await getSoundSets();
 
-    // Load all sounds from configuration
-    for (const [setName, sounds] of Object.entries(SOUND_SETS)) {
+    // Load all sounds from configuration (new format only)
+    for (const [setName, keyMappings] of Object.entries(SOUND_SETS)) {
       soundBuffers[setName] = {};
-      for (const [key, path] of Object.entries(sounds)) {
-        soundBuffers[setName][key] = await loadSound(path);
+
+      for (const [key, eventMappings] of Object.entries(keyMappings)) {
+        soundBuffers[setName][key] = {};
+
+        // Initialize all three event types
+        for (const eventType of ['keydown', 'keyup', 'keypress']) {
+          const path = eventMappings[eventType];
+
+          if (path === null) {
+            // Explicitly disabled - no fallback
+            soundBuffers[setName][key][eventType] = null;
+          } else if (path) {
+            // Load sound
+            soundBuffers[setName][key][eventType] = await loadSound(path);
+          } else {
+            // Missing from config - will fall back to default at runtime
+            soundBuffers[setName][key][eventType] = undefined;
+          }
+        }
       }
     }
   } catch (error) {
@@ -71,13 +88,21 @@ async function loadSounds() {
 }
 
 // Play sound directly in content script
-async function playSound(key) {
+async function playSound(key, eventType = 'keydown') {
   if (isMuted || !isAudioInitialized) return;
 
   // Ensure AudioContext is resumed before playing
   await ensureAudioContextResumed();
 
-  const buffer = soundBuffers[currentSoundSet]?.[key] || soundBuffers[currentSoundSet]?.default;
+  // Try specific key + event type
+  let buffer = soundBuffers[currentSoundSet]?.[key]?.[eventType];
+
+  // If undefined (not explicitly set), fall back to default
+  if (buffer === undefined) {
+    buffer = soundBuffers[currentSoundSet]?.default?.[eventType];
+  }
+
+  // If null (explicitly disabled) or still undefined, or no audioContext, return (no sound)
   if (!buffer || !audioContext) return;
 
   try {
@@ -158,7 +183,8 @@ window.addEventListener('message', async event => {
 
     // Play sound directly (only if not muted)
     if (!isMuted) {
-      await playSound(event.data.data.key);
+      const { key, eventType } = event.data.data;
+      await playSound(key, eventType || 'keydown'); // Default to keydown for backward compat
     }
 
     // Also notify background for icon updates (optional)
@@ -221,7 +247,29 @@ document.addEventListener('keydown', async event => {
     await initAudio();
   }
 
-  await playSound(event.key);
+  // Determine event type based on repeat flag
+  const eventType = event.repeat ? 'keypress' : 'keydown';
+  await playSound(event.key, eventType);
+
+  // Notify background
+  chrome.runtime
+    .sendMessage({
+      type: MESSAGE_TYPES.KEYPRESS,
+      key: event.key,
+    })
+    .catch(() => {});
+});
+
+// Fallback: Listen for keyup events
+document.addEventListener('keyup', async event => {
+  if (isMuted) return;
+
+  // Initialize audio if needed
+  if (!isAudioInitialized) {
+    await initAudio();
+  }
+
+  await playSound(event.key, 'keyup');
 
   // Notify background
   chrome.runtime

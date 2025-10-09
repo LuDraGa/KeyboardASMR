@@ -26,8 +26,13 @@ audio_sources:
     path: "mx-blue/press_key5.mp3"
 
 key_mappings:
-  default: "mx_blue_key1"
-  " ": "mx_blue_key4"
-  "Enter": "mx_blue_key5"
-  "Backspace": "mx_blue_key3"
-  "Delete": "mx_blue_key3"
+  default:
+    keydown: "mx_blue_key1"
+  " ":
+    keydown: "mx_blue_key4"
+  "Enter":
+    keydown: "mx_blue_key5"
+  "Backspace":
+    keydown: "mx_blue_key3"
+  "Delete":
+    keydown: "mx_blue_key3"

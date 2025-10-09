@@ -1,7 +1,7 @@
 name: "Typewriter"
 author: "KeyboardASMR Team"
-description: "Classic mechanical typewriter sounds"
-version: "1.0"
+description: "Classic mechanical typewriter sounds with key press and release"
+version: "2.0"
 
 ui:
   icon: "⌨️"
@@ -9,19 +9,29 @@ ui:
   category: "classic"
 
 audio_sources:
-  key_press:
+  key_press_down:
     type: "bundled"
     path: "typewriter/key-press.wav"
 
-  enter_key:
+  key_press_up:
+    type: "bundled"
+    path: "typewriter/key-press.wav"
+
+  enter_key_down:
     type: "bundled"
     path: "typewriter/enter-key.wav"
 
-  backspace_key:
+  backspace_key_down:
     type: "bundled"
     path: "typewriter/backspace-tyr.wav"
 
 key_mappings:
-  default: "key_press"
-  "Enter": "enter_key"
-  "Backspace": "backspace_key"
+  default:
+    keydown: "key_press_down"
+    keyup: "key_press_up"
+
+  "Enter":
+    keydown: "enter_key_down"
+
+  "Backspace":
+    keydown: "backspace_key_down"

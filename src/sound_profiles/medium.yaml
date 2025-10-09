@@ -14,4 +14,5 @@ audio_sources:
     path: "keyboard/medium.wav"
 
 key_mappings:
-  default: "medium_press"
+  default:
+    keydown: "medium_press"

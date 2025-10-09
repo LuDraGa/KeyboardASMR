@@ -38,8 +38,13 @@ audio_sources:
     path: "nk-cream/backspace.wav"
 
 key_mappings:
-  default: "nk_cream_a"
-  " ": "nk_cream_space"
-  "Enter": "nk_cream_enter"
-  "Backspace": "nk_cream_backspace"
-  "Delete": "nk_cream_backspace"
+  default:
+    keydown: "nk_cream_a"
+  " ":
+    keydown: "nk_cream_space"
+  "Enter":
+    keydown: "nk_cream_enter"
+  "Backspace":
+    keydown: "nk_cream_backspace"
+  "Delete":
+    keydown: "nk_cream_backspace"
