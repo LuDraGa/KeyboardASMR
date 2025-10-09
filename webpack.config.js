@@ -32,10 +32,9 @@ var options = {
     background: path.join(__dirname, 'src', 'pages', 'Background', 'index.js'),
     contentScript: path.join(__dirname, 'src', 'pages', 'Content', 'index.js'),
     injected: path.join(__dirname, 'src', 'pages', 'Content', 'injected.js'),
-    offscreen: path.join(__dirname, 'src', 'pages', 'Offscreen', 'index.js'),
   },
   chromeExtensionBoilerplate: {
-    notHotReload: ['background', 'contentScript', 'devtools', 'offscreen', 'injected'],
+    notHotReload: ['background', 'contentScript', 'devtools', 'injected'],
   },
   output: {
     filename: '[name].bundle.js',
@@ -197,15 +196,6 @@ var options = {
       filename: 'popup.html',
       chunks: ['popup'],
       cache: false,
-    }),
-    new CopyWebpackPlugin({
-      patterns: [
-        {
-          from: 'src/pages/Offscreen/offscreen.html',
-          to: path.join(__dirname, 'build'),
-          force: true,
-        },
-      ],
     }),
   ].filter(Boolean),
   infrastructureLogging: {
