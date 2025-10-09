@@ -35,8 +35,13 @@ audio_sources:
     path: "holy-panda/press_back.mp3"
 
 key_mappings:
-  default: "holy_panda_key1"
-  " ": "holy_panda_space"
-  "Enter": "holy_panda_enter"
-  "Backspace": "holy_panda_back"
-  "Delete": "holy_panda_back"
+  default:
+    keydown: "holy_panda_key1"
+  " ":
+    keydown: "holy_panda_space"
+  "Enter":
+    keydown: "holy_panda_enter"
+  "Backspace":
+    keydown: "holy_panda_back"
+  "Delete":
+    keydown: "holy_panda_back"

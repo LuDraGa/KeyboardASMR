@@ -35,8 +35,13 @@ audio_sources:
     path: "alpaca/press_back.mp3"
 
 key_mappings:
-  default: "alpaca_key1"
-  " ": "alpaca_space"
-  "Enter": "alpaca_enter"
-  "Backspace": "alpaca_back"
-  "Delete": "alpaca_back"
+  default:
+    keydown: "alpaca_key1"
+  " ":
+    keydown: "alpaca_space"
+  "Enter":
+    keydown: "alpaca_enter"
+  "Backspace":
+    keydown: "alpaca_back"
+  "Delete":
+    keydown: "alpaca_back"

@@ -38,8 +38,13 @@ audio_sources:
     path: "telios-v2/back.wav"
 
 key_mappings:
-  default: "telios_key1"
-  " ": "telios_space"
-  "Enter": "telios_enter"
-  "Backspace": "telios_back"
-  "Delete": "telios_back"
+  default:
+    keydown: "telios_key1"
+  " ":
+    keydown: "telios_space"
+  "Enter":
+    keydown: "telios_enter"
+  "Backspace":
+    keydown: "telios_back"
+  "Delete":
+    keydown: "telios_back"

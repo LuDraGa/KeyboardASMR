@@ -125,15 +125,10 @@ class ProfileLoader {
   }
 
   /**
-   * Validate that audio sources are accessible
+   * Validate that audio sources are accessible (new format only)
    */
   async validateAudioSources(audioSources) {
     for (const [sourceId, sourceConfig] of Object.entries(audioSources)) {
-      if (typeof sourceConfig === 'string') {
-        // Legacy format - assume bundled
-        continue;
-      }
-
       if (!sourceConfig.type || !sourceConfig.path) {
         throw new Error(`Audio source "${sourceId}" missing type or path`);
       }
@@ -184,12 +179,30 @@ class ProfileLoader {
   }
 
   /**
-   * Validate key mappings reference valid audio sources
+   * Validate key mappings reference valid audio sources (new format only)
    */
   validateKeyMappings(keyMappings, audioSources) {
-    for (const [key, sourceId] of Object.entries(keyMappings)) {
-      if (!audioSources[sourceId]) {
-        throw new Error(`Key mapping "${key}" references unknown audio source: ${sourceId}`);
+    for (const [key, mapping] of Object.entries(keyMappings)) {
+      if (typeof mapping !== 'object' || mapping === null) {
+        throw new Error(`Invalid mapping format for key "${key}" - must be object with event types`);
+      }
+
+      // Validate each event type
+      for (const [eventType, sourceId] of Object.entries(mapping)) {
+        if (!['keydown', 'keyup', 'keypress'].includes(eventType)) {
+          throw new Error(`Invalid event type "${eventType}" in mapping for key "${key}"`);
+        }
+
+        // Skip validation for null (explicitly disabled)
+        if (sourceId === null) {
+          continue;
+        }
+
+        if (!audioSources[sourceId]) {
+          throw new Error(
+            `Key mapping "${key}.${eventType}" references unknown audio source: ${sourceId}`
+          );
+        }
       }
     }
 
@@ -210,14 +223,9 @@ class ProfileLoader {
   }
 
   /**
-   * Resolve audio URL based on source configuration
+   * Resolve audio URL based on source configuration (new format only)
    */
   async resolveAudioUrl(sourceConfig) {
-    if (typeof sourceConfig === 'string') {
-      // Legacy format - assume bundled
-      return chrome.runtime.getURL(`assets/sounds/${sourceConfig}`);
-    }
-
     switch (sourceConfig.type) {
       case 'bundled':
         return chrome.runtime.getURL(`assets/sounds/${sourceConfig.path}`);
@@ -270,21 +278,33 @@ class ProfileLoader {
   }
 
   /**
-   * Convert profile to legacy SOUND_SETS format for backward compatibility
+   * Convert chrome-extension:// URL to relative path
+   */
+  urlToRelativePath(audioUrl) {
+    if (audioUrl.startsWith('chrome-extension://')) {
+      const url = new URL(audioUrl);
+      return url.pathname.replace('/', '');
+    }
+    return audioUrl;
+  }
+
+  /**
+   * Convert profile to SOUND_SETS format with event types
    */
   async profileToLegacyFormat(profile) {
     const legacyFormat = {};
 
-    for (const [key, sourceId] of Object.entries(profile.key_mappings)) {
-      const sourceConfig = profile.audio_sources[sourceId];
-      const audioUrl = await this.resolveAudioUrl(sourceConfig);
+    for (const [key, mapping] of Object.entries(profile.key_mappings)) {
+      legacyFormat[key] = {};
 
-      // Convert chrome-extension:// URLs back to relative paths for legacy format
-      if (audioUrl.startsWith('chrome-extension://')) {
-        const url = new URL(audioUrl);
-        legacyFormat[key] = url.pathname.replace('/', '');
-      } else {
-        legacyFormat[key] = audioUrl;
+      for (const [eventType, sourceId] of Object.entries(mapping)) {
+        if (sourceId === null) {
+          legacyFormat[key][eventType] = null;
+        } else {
+          const sourceConfig = profile.audio_sources[sourceId];
+          const audioUrl = await this.resolveAudioUrl(sourceConfig);
+          legacyFormat[key][eventType] = this.urlToRelativePath(audioUrl);
+        }
       }
     }
 

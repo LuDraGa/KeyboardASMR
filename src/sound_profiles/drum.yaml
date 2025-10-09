@@ -1,7 +1,7 @@
 name: "Drum Kit"
 author: "KeyboardASMR Team"
-description: "Turn your keyboard into a drum set"
-version: "1.0"
+description: "Turn your keyboard into a drum set with realistic hits and ghost notes"
+version: "2.0"
 
 ui:
   icon: "🥁"
@@ -9,24 +9,39 @@ ui:
   category: "creative"
 
 audio_sources:
-  snare:
+  snare_hit:
     type: "bundled"
     path: "drum/snare1.wav"
 
-  kick:
-    type: "bundled"
-    path: "drum/kick1.wav"
-
-  open_snare:
+  snare_ghost:
     type: "bundled"
     path: "drum/openSnare1.wav"
 
-  tom:
+  kick_hit:
+    type: "bundled"
+    path: "drum/kick1.wav"
+
+  tom_hit:
     type: "bundled"
     path: "drum/tom1.wav"
 
 key_mappings:
-  default: "snare"
-  "Enter": "kick"
-  "Backspace": "open_snare"
-  " ": "tom"
+  default:
+    keydown: "snare_hit"
+    keyup: null
+    keypress: null
+
+  "Enter":
+    keydown: "kick_hit"
+    keyup: null
+    keypress: null
+
+  "Backspace":
+    keydown: "snare_ghost"
+    keyup: null
+    keypress: null
+
+  " ":
+    keydown: "tom_hit"
+    keyup: null
+    keypress: null

@@ -35,8 +35,13 @@ audio_sources:
     path: "mx-brown/press_back.mp3"
 
 key_mappings:
-  default: "mx_brown_key1"
-  " ": "mx_brown_space"
-  "Enter": "mx_brown_enter"
-  "Backspace": "mx_brown_back"
-  "Delete": "mx_brown_back"
+  default:
+    keydown: "mx_brown_key1"
+  " ":
+    keydown: "mx_brown_space"
+  "Enter":
+    keydown: "mx_brown_enter"
+  "Backspace":
+    keydown: "mx_brown_back"
+  "Delete":
+    keydown: "mx_brown_back"

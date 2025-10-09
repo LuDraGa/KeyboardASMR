@@ -38,8 +38,16 @@ const Popup = () => {
     if (!ctx || soundBuffers[profile.id]) return;
 
     try {
-      // Get the default sound URL for this profile
-      const defaultAudioSource = profile.audio_sources[profile.key_mappings.default];
+      // Get the default keydown sound for preview (new format only)
+      const defaultMapping = profile.key_mappings.default;
+      const audioSourceId = defaultMapping.keydown;
+
+      // Skip if no keydown sound configured
+      if (!audioSourceId || audioSourceId === null) {
+        return null;
+      }
+
+      const defaultAudioSource = profile.audio_sources[audioSourceId];
       const soundUrl = await profileLoader.resolveAudioUrl(defaultAudioSource);
 
       const response = await fetch(soundUrl);

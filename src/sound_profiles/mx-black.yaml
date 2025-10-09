@@ -35,8 +35,13 @@ audio_sources:
     path: "mx-black/press_back.mp3"
 
 key_mappings:
-  default: "mx_black_key1"
-  " ": "mx_black_space"
-  "Enter": "mx_black_enter"
-  "Backspace": "mx_black_back"
-  "Delete": "mx_black_back"
+  default:
+    keydown: "mx_black_key1"
+  " ":
+    keydown: "mx_black_space"
+  "Enter":
+    keydown: "mx_black_enter"
+  "Backspace":
+    keydown: "mx_black_back"
+  "Delete":
+    keydown: "mx_black_back"
