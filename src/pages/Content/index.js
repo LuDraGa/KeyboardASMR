@@ -11,6 +11,10 @@ const soundBuffers = {};
 let isAudioInitialized = false;
 let audioContextResumed = false;
 
+// Track whether injected script is active to prevent duplicate events
+let injectedScriptActive = false;
+const FALLBACK_TIMEOUT = 500; // Enable fallback if no heartbeat after 500ms
+
 // Initialize Web Audio API (creates suspended context)
 async function initAudio() {
   if (isAudioInitialized) return;
@@ -175,27 +179,37 @@ window.addEventListener('message', async event => {
   if (event.source !== window) return;
 
   // Check if it's our message
-  if (event.data?.source === 'keyboard-asmr-injected' && event.data?.type === 'KEYPRESS') {
-    // Initialize audio on first keypress if needed
-    if (!isAudioInitialized) {
-      await initAudio();
+  if (event.data?.source === 'keyboard-asmr-injected') {
+    // Handle ready signal from injected script
+    if (event.data?.type === 'INJECTED_READY') {
+      injectedScriptActive = true;
+      console.log('Keyboard ASMR: Injected script confirmed active, disabling fallback listeners');
+      return;
     }
 
-    // Play sound directly (only if not muted)
-    if (!isMuted) {
-      const { key, eventType } = event.data.data;
-      await playSound(key, eventType || 'keydown'); // Default to keydown for backward compat
-    }
+    // Handle keypress events
+    if (event.data?.type === 'KEYPRESS') {
+      // Initialize audio on first keypress if needed
+      if (!isAudioInitialized) {
+        await initAudio();
+      }
 
-    // Also notify background for icon updates (optional)
-    chrome.runtime
-      .sendMessage({
-        type: MESSAGE_TYPES.KEYPRESS,
-        key: event.data.data.key,
-      })
-      .catch(() => {
-        // Ignore errors if background is not available
-      });
+      // Play sound directly (only if not muted)
+      if (!isMuted) {
+        const { key, eventType } = event.data.data;
+        await playSound(key, eventType || 'keydown'); // Default to keydown for backward compat
+      }
+
+      // Also notify background for icon updates (optional)
+      chrome.runtime
+        .sendMessage({
+          type: MESSAGE_TYPES.KEYPRESS,
+          key: event.data.data.key,
+        })
+        .catch(() => {
+          // Ignore errors if background is not available
+        });
+    }
   }
 });
 
@@ -238,8 +252,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Fallback: Also listen for keyboard events directly (for sites where injection fails)
-document.addEventListener('keydown', async event => {
+// Fallback keyboard event handlers (only used if injection fails)
+async function handleFallbackKeydown(event) {
   if (isMuted) return;
 
   // Initialize audio on first keypress if needed
@@ -258,10 +272,9 @@ document.addEventListener('keydown', async event => {
       key: event.key,
     })
     .catch(() => {});
-});
+}
 
-// Fallback: Listen for keyup events
-document.addEventListener('keyup', async event => {
+async function handleFallbackKeyup(event) {
   if (isMuted) return;
 
   // Initialize audio if needed
@@ -278,7 +291,22 @@ document.addEventListener('keyup', async event => {
       key: event.key,
     })
     .catch(() => {});
-});
+}
+
+// Enable fallback listeners only if injected script fails to load
+function enableFallbackListeners() {
+  console.log('Keyboard ASMR: Enabling fallback event listeners');
+  document.addEventListener('keydown', handleFallbackKeydown);
+  document.addEventListener('keyup', handleFallbackKeyup);
+}
+
+// Wait for injected script confirmation, enable fallback if timeout
+setTimeout(() => {
+  if (!injectedScriptActive) {
+    console.log('Keyboard ASMR: Injected script not detected, using fallback listeners');
+    enableFallbackListeners();
+  }
+}, FALLBACK_TIMEOUT);
 
 // Try to inject script early
 if (document.documentElement) {

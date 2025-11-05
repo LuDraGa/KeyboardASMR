@@ -178,5 +178,14 @@
     setTimeout(enhanceCompatibility, 100);
   }
 
+  // Send ready signal to content script to disable fallback listeners
+  window.postMessage(
+    {
+      source: MESSAGE_SOURCE,
+      type: 'INJECTED_READY',
+    },
+    '*'
+  );
+
   console.log('Keyboard ASMR: Injected script loaded successfully');
 })();
