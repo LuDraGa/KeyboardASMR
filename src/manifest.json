@@ -13,7 +13,7 @@
     "128": "icon-128.png",
     "34": "icon-34.png"
   },
-  "permissions": ["storage", "offscreen"],
+  "permissions": ["storage"],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
@@ -33,7 +33,6 @@
         "icon-128-disabled.png",
         "icon-34.png",
         "icon-34-disabled.png",
-        "offscreen.html",
         "injected.bundle.js"
       ],
       "matches": ["<all_urls>"]
