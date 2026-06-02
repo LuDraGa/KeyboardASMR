@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Keyboard ASMR Compatibility Tests</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f7fb;
+        --panel: #ffffff;
+        --ink: #172033;
+        --muted: #667085;
+        --border: #d9e0ea;
+        --accent: #2563eb;
+        --ok: #12805c;
+        --warn: #b54708;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      main {
+        width: min(1120px, calc(100% - 32px));
+        margin: 32px auto;
+      }
+
+      header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: start;
+        margin-bottom: 18px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 28px;
+        line-height: 1.1;
+      }
+
+      h2 {
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      h3 {
+        font-size: 15px;
+      }
+
+      .subhead {
+        margin-top: 8px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .summary {
+        min-width: 220px;
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .summary strong {
+        display: block;
+        font-size: 26px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .card {
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+      }
+
+      .card.full {
+        grid-column: 1 / -1;
+      }
+
+      .card p {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      label {
+        display: block;
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      form {
+        margin: 0;
+      }
+
+      input,
+      textarea,
+      select,
+      .editable,
+      .editor-shell {
+        width: 100%;
+        margin-top: 6px;
+        padding: 11px 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: #ffffff;
+        color: var(--ink);
+        font: inherit;
+      }
+
+      textarea {
+        min-height: 96px;
+        resize: vertical;
+      }
+
+      .editable,
+      .editor-shell {
+        min-height: 92px;
+        outline: none;
+      }
+
+      .editable:focus,
+      .editor-shell:focus,
+      input:focus,
+      textarea:focus,
+      select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      }
+
+      button {
+        margin-top: 12px;
+        padding: 9px 12px;
+        border: 0;
+        border-radius: 6px;
+        background: var(--accent);
+        color: #ffffff;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      iframe {
+        width: 100%;
+        height: 210px;
+        margin-top: 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: #ffffff;
+      }
+
+      .metric-row {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .metric {
+        padding: 10px;
+        border-radius: 6px;
+        background: #eef4ff;
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 20px;
+      }
+
+      .status-list {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .status {
+        padding: 10px;
+        border-radius: 6px;
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        font-size: 13px;
+      }
+
+      .status.ok {
+        color: var(--ok);
+      }
+
+      .status.warn {
+        color: var(--warn);
+      }
+
+      .code {
+        font-family: 'SFMono-Regular', Consolas, monospace;
+      }
+
+      @media (max-width: 780px) {
+        header,
+        .grid,
+        .metric-row,
+        .status-list {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Keyboard ASMR Compatibility Tests</h1>
+          <p class="subhead">
+            Open this page from <span class="code">npm run start</span> at
+            <span class="code">http://localhost:3000/testing/compatibility.html</span>. Load the
+            unpacked extension from <span class="code">build/</span>, type in each surface, and use
+            the extension popup status panel after each check.
+          </p>
+        </div>
+        <aside class="summary">
+          <span>Local events seen</span>
+          <strong id="total-events">0</strong>
+          <p>This page counts keyboard events without displaying key values.</p>
+        </aside>
+      </header>
+
+      <section class="card full">
+        <h2>Page event coverage</h2>
+        <div class="metric-row">
+          <div class="metric">
+            <span>Keydown</span>
+            <strong id="keydown-count">0</strong>
+          </div>
+          <div class="metric">
+            <span>Keyup</span>
+            <strong id="keyup-count">0</strong>
+          </div>
+          <div class="metric">
+            <span>Focused target</span>
+            <strong id="target-name">none</strong>
+          </div>
+          <div class="metric">
+            <span>Last event</span>
+            <strong id="last-event">none</strong>
+          </div>
+        </div>
+        <div class="status-list">
+          <div class="status" id="input-status">Input: not tested</div>
+          <div class="status" id="textarea-status">Textarea: not tested</div>
+          <div class="status" id="editable-status">Contenteditable: not tested</div>
+          <div class="status" id="shadow-status">Shadow input: not tested</div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h3>Regular form controls</h3>
+          <p>Checks normal input, textarea, select focus, and password-style fields.</p>
+          <form onsubmit="return false">
+            <label for="regular-input">Text input</label>
+            <input
+              id="regular-input"
+              data-test-id="input"
+              type="text"
+              placeholder="Type here"
+              autocomplete="username"
+            />
+            <label for="password-input">Password input</label>
+            <input
+              id="password-input"
+              data-test-id="input"
+              type="password"
+              placeholder="Type here"
+              autocomplete="current-password"
+            />
+            <label for="textarea-input">Textarea</label>
+            <textarea
+              id="textarea-input"
+              data-test-id="textarea"
+              placeholder="Type here"
+            ></textarea>
+          </form>
+        </article>
+
+        <article class="card">
+          <h3>Contenteditable surfaces</h3>
+          <p>Checks rich text editors and document-like inputs.</p>
+          <label for="editable-basic">Basic contenteditable</label>
+          <div id="editable-basic" class="editable" data-test-id="editable" contenteditable="true">
+            Type in this editable block.
+          </div>
+          <label for="editor-shell">Editor-like textbox</label>
+          <div
+            id="editor-shell"
+            class="editor-shell"
+            data-test-id="editable"
+            contenteditable="true"
+            role="textbox"
+            aria-multiline="true"
+            spellcheck="false"
+          >
+            Type in this editor-like block.
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Shadow DOM</h3>
+          <p>Checks whether direct fallback listeners still catch retargeted keyboard events.</p>
+          <div id="shadow-host"></div>
+        </article>
+
+        <article class="card">
+          <h3>Dynamic content</h3>
+          <p>Checks inputs added after the content script has already loaded.</p>
+          <button type="button" id="add-input">Add dynamic input</button>
+          <div id="dynamic-container"></div>
+        </article>
+
+        <article class="card">
+          <h3>Same-origin iframe</h3>
+          <p>Expected: extension status should work in the frame and typing should play.</p>
+          <iframe
+            src="/testing/frame.html?kind=same-origin"
+            title="Same-origin input frame"
+          ></iframe>
+        </article>
+
+        <article class="card">
+          <h3>Local cross-origin iframe</h3>
+          <p>
+            Expected: with all-frames content scripts, typing should play here too. If this frame
+            does not load, open this page through localhost and keep port 3000.
+          </p>
+          <iframe
+            src="http://[::1]:3000/testing/frame.html?kind=cross-origin"
+            title="Local cross-origin input frame"
+          ></iframe>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const counts = {
+        keydown: 0,
+        keyup: 0,
+      };
+
+      const tested = new Set();
+
+      function getTestId(event) {
+        const eventPath = typeof event.composedPath === 'function' ? event.composedPath() : [];
+        const testNode = eventPath.find(node => node.dataset && node.dataset.testId);
+        return testNode?.dataset?.testId || null;
+      }
+
+      function shortTargetName(event) {
+        const eventPath = typeof event.composedPath === 'function' ? event.composedPath() : [];
+        const testNode = eventPath.find(node => node.dataset && node.dataset.testId);
+        const target = testNode || event.target;
+
+        if (!target) return 'unknown';
+        if (target.dataset && target.dataset.testId) return target.dataset.testId;
+        if (target.isContentEditable) return 'editable';
+        if (target.tagName) return target.tagName.toLowerCase();
+        return 'unknown';
+      }
+
+      function updateStatus(event) {
+        const testId = getTestId(event);
+        if (testId) tested.add(testId);
+
+        document.getElementById('input-status').textContent = tested.has('input')
+          ? 'Input: tested'
+          : 'Input: not tested';
+        document.getElementById('input-status').className = tested.has('input')
+          ? 'status ok'
+          : 'status';
+
+        document.getElementById('textarea-status').textContent = tested.has('textarea')
+          ? 'Textarea: tested'
+          : 'Textarea: not tested';
+        document.getElementById('textarea-status').className = tested.has('textarea')
+          ? 'status ok'
+          : 'status';
+
+        document.getElementById('editable-status').textContent = tested.has('editable')
+          ? 'Contenteditable: tested'
+          : 'Contenteditable: not tested';
+        document.getElementById('editable-status').className = tested.has('editable')
+          ? 'status ok'
+          : 'status';
+
+        document.getElementById('shadow-status').textContent = tested.has('shadow')
+          ? 'Shadow input: tested'
+          : 'Shadow input: not tested';
+        document.getElementById('shadow-status').className = tested.has('shadow')
+          ? 'status ok'
+          : 'status';
+      }
+
+      function handleKeyboardEvent(event) {
+        if (event.type === 'keydown') counts.keydown += 1;
+        if (event.type === 'keyup') counts.keyup += 1;
+
+        const total = counts.keydown + counts.keyup;
+        const targetName = shortTargetName(event);
+
+        document.getElementById('total-events').textContent = String(total);
+        document.getElementById('keydown-count').textContent = String(counts.keydown);
+        document.getElementById('keyup-count').textContent = String(counts.keyup);
+        document.getElementById('target-name').textContent = targetName;
+        document.getElementById('last-event').textContent = event.type;
+        updateStatus(event);
+      }
+
+      document.addEventListener('keydown', handleKeyboardEvent, true);
+      document.addEventListener('keyup', handleKeyboardEvent, true);
+
+      const shadowRoot = document.getElementById('shadow-host').attachShadow({ mode: 'open' });
+      shadowRoot.innerHTML = `
+        <style>
+          label {
+            display: block;
+            margin-top: 12px;
+            color: #667085;
+            font: 700 12px Inter, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+          }
+
+          input {
+            width: 100%;
+            margin-top: 6px;
+            padding: 11px 12px;
+            border: 1px solid #d9e0ea;
+            border-radius: 6px;
+            font: inherit;
+          }
+        </style>
+        <label for="shadow-input">Shadow input</label>
+        <input id="shadow-input" data-test-id="shadow" type="text" placeholder="Type here" />
+      `;
+
+      document.getElementById('add-input').addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Dynamically added input';
+        input.dataset.testId = 'input';
+        document.getElementById('dynamic-container').appendChild(input);
+        input.focus();
+      });
+    </script>
+  </body>
+</html>

@@ -58,6 +58,7 @@ var options = {
           {
             loader: 'sass-loader',
             options: {
+              api: 'modern',
               sourceMap: true,
             },
           },

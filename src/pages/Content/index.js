@@ -13,7 +13,52 @@ let audioContextResumed = false;
 
 // Track whether injected script is active to prevent duplicate events
 let injectedScriptActive = false;
+let fallbackListenersEnabled = false;
 const FALLBACK_TIMEOUT = 500; // Enable fallback if no heartbeat after 500ms
+
+const runtimeStats = {
+  loadedSoundCount: 0,
+  failedSoundCount: 0,
+  loadAttemptCount: 0,
+  keyEventCount: 0,
+  playedSoundCount: 0,
+  droppedSoundCount: 0,
+  lastEventAt: null,
+  lastSoundAt: null,
+  lastErrorCode: null,
+  lastErrorAt: null,
+};
+
+function recordError(code) {
+  runtimeStats.lastErrorCode = code;
+  runtimeStats.lastErrorAt = new Date().toISOString();
+}
+
+function getContentStatus() {
+  const selectedProfile = soundBuffers[currentSoundSet];
+  const defaultMapping = selectedProfile?.default || {};
+  const selectedProfileLoaded = Object.values(defaultMapping).some(buffer => Boolean(buffer));
+
+  return {
+    ok: true,
+    muted: isMuted,
+    volumePercent: Math.round(volume * 100),
+    selectedProfile: currentSoundSet,
+    selectedProfileLoaded,
+    loadedProfileCount: Object.keys(soundBuffers).length,
+    audioInitialized: isAudioInitialized,
+    audioContextState: audioContext?.state || 'none',
+    audioContextResumed,
+    captureMode: injectedScriptActive
+      ? 'injected'
+      : fallbackListenersEnabled
+      ? 'fallback'
+      : 'pending',
+    documentVisible: document.visibilityState === 'visible',
+    documentFocused: document.hasFocus(),
+    stats: { ...runtimeStats },
+  };
+}
 
 // Initialize Web Audio API (creates suspended context)
 async function initAudio() {
@@ -26,6 +71,7 @@ async function initAudio() {
     isAudioInitialized = true;
     console.log('Keyboard ASMR: Audio initialized successfully');
   } catch (error) {
+    recordError('audio_init_failed');
     console.error('Keyboard ASMR: Failed to initialize audio:', error);
   }
 }
@@ -41,6 +87,7 @@ async function ensureAudioContextResumed() {
     audioContextResumed = true;
     console.log('Keyboard ASMR: AudioContext resumed');
   } catch (error) {
+    recordError('audio_resume_failed');
     console.error('Keyboard ASMR: Failed to resume AudioContext:', error);
   }
 }
@@ -49,16 +96,25 @@ async function ensureAudioContextResumed() {
 async function loadSounds() {
   const loadSound = async url => {
     try {
+      runtimeStats.loadAttemptCount += 1;
       const response = await fetch(chrome.runtime.getURL(url));
       const arrayBuffer = await response.arrayBuffer();
-      return await audioContext.decodeAudioData(arrayBuffer);
+      const decodedAudio = await audioContext.decodeAudioData(arrayBuffer);
+      runtimeStats.loadedSoundCount += 1;
+      return decodedAudio;
     } catch (error) {
+      runtimeStats.failedSoundCount += 1;
+      recordError('sound_load_failed');
       console.error(`Keyboard ASMR: Error loading sound: ${url}`, error);
       return null;
     }
   };
 
   try {
+    runtimeStats.loadedSoundCount = 0;
+    runtimeStats.failedSoundCount = 0;
+    runtimeStats.loadAttemptCount = 0;
+
     // Get sound sets from profile loader (with fallback)
     const SOUND_SETS = await getSoundSets();
 
@@ -87,6 +143,7 @@ async function loadSounds() {
       }
     }
   } catch (error) {
+    recordError('sound_sets_failed');
     console.error('Keyboard ASMR: Failed to load sound sets:', error);
   }
 }
@@ -107,7 +164,10 @@ async function playSound(key, eventType = 'keydown') {
   }
 
   // If null (explicitly disabled) or still undefined, or no audioContext, return (no sound)
-  if (!buffer || !audioContext) return;
+  if (!buffer || !audioContext) {
+    runtimeStats.droppedSoundCount += 1;
+    return;
+  }
 
   try {
     const source = audioContext.createBufferSource();
@@ -120,7 +180,10 @@ async function playSound(key, eventType = 'keydown') {
     gainNode.connect(audioContext.destination);
 
     source.start(0);
+    runtimeStats.playedSoundCount += 1;
+    runtimeStats.lastSoundAt = new Date().toISOString();
   } catch (error) {
+    recordError('sound_play_failed');
     console.error('Keyboard ASMR: Error playing sound:', error);
   }
 }
@@ -189,6 +252,9 @@ window.addEventListener('message', async event => {
 
     // Handle keypress events
     if (event.data?.type === 'KEYPRESS') {
+      runtimeStats.keyEventCount += 1;
+      runtimeStats.lastEventAt = new Date().toISOString();
+
       // Initialize audio on first keypress if needed
       if (!isAudioInitialized) {
         await initAudio();
@@ -199,16 +265,6 @@ window.addEventListener('message', async event => {
         const { key, eventType } = event.data.data;
         await playSound(key, eventType || 'keydown'); // Default to keydown for backward compat
       }
-
-      // Also notify background for icon updates (optional)
-      chrome.runtime
-        .sendMessage({
-          type: MESSAGE_TYPES.KEYPRESS,
-          key: event.data.data.key,
-        })
-        .catch(() => {
-          // Ignore errors if background is not available
-        });
     }
   }
 });
@@ -247,6 +303,11 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
 
 // Listen for state changes from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === MESSAGE_TYPES.GET_STATUS) {
+    sendResponse(getContentStatus());
+    return;
+  }
+
   if (message.type === MESSAGE_TYPES.STATE_CHANGE) {
     isMuted = message.isMuted;
   }
@@ -256,6 +317,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function handleFallbackKeydown(event) {
   if (isMuted) return;
 
+  runtimeStats.keyEventCount += 1;
+  runtimeStats.lastEventAt = new Date().toISOString();
+
   // Initialize audio on first keypress if needed
   if (!isAudioInitialized) {
     await initAudio();
@@ -264,18 +328,13 @@ async function handleFallbackKeydown(event) {
   // Determine event type based on repeat flag
   const eventType = event.repeat ? 'keypress' : 'keydown';
   await playSound(event.key, eventType);
-
-  // Notify background
-  chrome.runtime
-    .sendMessage({
-      type: MESSAGE_TYPES.KEYPRESS,
-      key: event.key,
-    })
-    .catch(() => {});
 }
 
 async function handleFallbackKeyup(event) {
   if (isMuted) return;
+
+  runtimeStats.keyEventCount += 1;
+  runtimeStats.lastEventAt = new Date().toISOString();
 
   // Initialize audio if needed
   if (!isAudioInitialized) {
@@ -283,18 +342,11 @@ async function handleFallbackKeyup(event) {
   }
 
   await playSound(event.key, 'keyup');
-
-  // Notify background
-  chrome.runtime
-    .sendMessage({
-      type: MESSAGE_TYPES.KEYPRESS,
-      key: event.key,
-    })
-    .catch(() => {});
 }
 
 // Enable fallback listeners only if injected script fails to load
 function enableFallbackListeners() {
+  fallbackListenersEnabled = true;
   console.log('Keyboard ASMR: Enabling fallback event listeners');
   document.addEventListener('keydown', handleFallbackKeydown);
   document.addEventListener('keyup', handleFallbackKeyup);

@@ -10,16 +10,33 @@
   const DEBOUNCE_DELAY = 30; // milliseconds
   const lastEventTimes = new Map(); // Track per (key, eventType) for debouncing
 
-  // Check if we should capture events from this element
-  function shouldCaptureFromElement(element) {
-    // Capture from all input elements and contenteditable
-    if (!element) return true;
+  function isTypingElement(element) {
+    if (!element || element === window || element === document) {
+      return false;
+    }
 
     const tagName = element.tagName?.toLowerCase();
     const isEditable = element.contentEditable === 'true' || element.isContentEditable;
     const isInput = ['input', 'textarea', 'select'].includes(tagName);
 
-    return isEditable || isInput || !element.tagName;
+    return isEditable || isInput;
+  }
+
+  // Keyboard events from Shadow DOM are retargeted to the host. Use the
+  // composed path so shadow inputs/editors are still treated as typing surfaces.
+  function getCaptureTarget(event) {
+    if (isTypingElement(event.target)) {
+      return event.target;
+    }
+
+    const eventPath = typeof event.composedPath === 'function' ? event.composedPath() : [];
+    const typingTarget = eventPath.find(isTypingElement);
+
+    if (typingTarget) {
+      return typingTarget;
+    }
+
+    return event.target?.tagName ? null : event.target;
   }
 
   // Enhanced keyboard event handler
@@ -30,7 +47,8 @@
     }
 
     // Check if we should capture from this element
-    if (!shouldCaptureFromElement(event.target)) {
+    const captureTarget = getCaptureTarget(event);
+    if (!captureTarget) {
       return;
     }
 
@@ -68,9 +86,10 @@
           location: event.location,
           repeat: event.repeat,
           targetInfo: {
-            tagName: event.target.tagName?.toLowerCase(),
-            isContentEditable: event.target.isContentEditable,
-            type: event.target.type,
+            tagName: captureTarget.tagName?.toLowerCase(),
+            isContentEditable: captureTarget.isContentEditable,
+            type: captureTarget.type,
+            wasRetargeted: captureTarget !== event.target,
           },
         },
       },
@@ -85,49 +104,6 @@
   // Also attach to document for redundancy
   document.addEventListener('keydown', handleKeyboardEvent, true);
   document.addEventListener('keyup', handleKeyboardEvent, true);
-
-  // Handle dynamically added iframes
-  function attachToIframes() {
-    const iframes = document.querySelectorAll('iframe');
-    iframes.forEach(iframe => {
-      try {
-        // Only works for same-origin iframes
-        if (iframe.contentWindow) {
-          iframe.contentWindow.addEventListener('keydown', handleKeyboardEvent, true);
-          iframe.contentWindow.addEventListener('keyup', handleKeyboardEvent, true);
-        }
-      } catch (e) {
-        // Cross-origin iframe, skip
-      }
-    });
-  }
-
-  // Monitor for new iframes
-  const observer = new MutationObserver(mutations => {
-    let hasNewIframes = false;
-    mutations.forEach(mutation => {
-      mutation.addedNodes.forEach(node => {
-        if (node.tagName === 'IFRAME') {
-          hasNewIframes = true;
-        }
-      });
-    });
-    if (hasNewIframes) {
-      setTimeout(attachToIframes, 100);
-    }
-  });
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-  });
-
-  // Initial iframe attachment
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', attachToIframes);
-  } else {
-    attachToIframes();
-  }
 
   // Handle special cases for popular web apps
   function enhanceCompatibility() {

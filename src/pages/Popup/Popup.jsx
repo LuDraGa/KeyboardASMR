@@ -1,7 +1,69 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import './Popup.css';
 import { DEFAULT_SETTINGS, MESSAGE_TYPES, STORAGE_KEYS } from '../../shared/config';
 import { profileLoader } from '../../utils/profileLoader';
+
+const STATUS_COPY_RESET_DELAY = 1500;
+
+const createDisconnectedStatus = reason => ({
+  state: 'disconnected',
+  title: 'No page connection',
+  message: 'Refresh this tab; Chrome pages, Web Store, and address bar are unsupported.',
+  reason,
+  report: null,
+});
+
+const getStatusFromReport = report => {
+  if (report.muted) {
+    return {
+      state: 'muted',
+      title: 'Muted',
+      message: 'Turn sound on to test playback.',
+      report,
+    };
+  }
+
+  if (!report.audioInitialized) {
+    return {
+      state: 'checking',
+      title: 'Audio loading',
+      message: 'Press a key or check again in a moment.',
+      report,
+    };
+  }
+
+  if (!report.selectedProfileLoaded) {
+    return {
+      state: 'attention',
+      title: 'Profile issue',
+      message: 'Switch profiles or refresh this tab.',
+      report,
+    };
+  }
+
+  if (report.captureMode === 'fallback') {
+    return {
+      state: 'ready',
+      title: 'Compatibility mode',
+      message: 'Typing should play on this tab.',
+      report,
+    };
+  }
+
+  return {
+    state: 'ready',
+    title: 'Ready',
+    message: 'Typing should play on this tab.',
+    report,
+  };
+};
+
+const StatusMetric = ({ label, value }) => (
+  <div className='status-metric'>
+    <span className='status-metric-label'>{label}</span>
+    <span className='status-metric-value'>{value}</span>
+  </div>
+);
 
 const Popup = () => {
   const [soundSet, setSoundSet] = useState(DEFAULT_SETTINGS.soundSet);
@@ -10,6 +72,13 @@ const Popup = () => {
   const [theme, setTheme] = useState('dark');
   const [soundProfiles, setSoundProfiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [tabStatus, setTabStatus] = useState({
+    state: 'checking',
+    title: 'Checking current tab',
+    message: 'Looking for Keyboard ASMR on this page.',
+    report: null,
+  });
+  const [copyState, setCopyState] = useState('idle');
 
   // Audio context for sound preview
   const [audioContext, setAudioContext] = useState(null);
@@ -30,6 +99,42 @@ const Popup = () => {
       return null;
     }
   };
+
+  const requestTabStatus = useCallback(() => {
+    setTabStatus({
+      state: 'checking',
+      title: 'Checking current tab',
+      message: 'Looking for Keyboard ASMR on this page.',
+      report: null,
+    });
+
+    if (!chrome.tabs?.query) {
+      setTabStatus(createDisconnectedStatus('tabs_api_unavailable'));
+      return;
+    }
+
+    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+      if (chrome.runtime.lastError) {
+        setTabStatus(createDisconnectedStatus('active_tab_query_failed'));
+        return;
+      }
+
+      const activeTab = tabs?.[0];
+      if (!activeTab?.id) {
+        setTabStatus(createDisconnectedStatus('active_tab_missing'));
+        return;
+      }
+
+      chrome.tabs.sendMessage(activeTab.id, { type: MESSAGE_TYPES.GET_STATUS }, response => {
+        if (chrome.runtime.lastError || !response?.ok) {
+          setTabStatus(createDisconnectedStatus('content_script_unavailable'));
+          return;
+        }
+
+        setTabStatus(getStatusFromReport(response));
+      });
+    });
+  }, []);
 
   // Load sound for preview
   const loadSoundBuffer = async (profile, context) => {
@@ -136,7 +241,8 @@ const Popup = () => {
     };
 
     initialize();
-  }, []);
+    requestTabStatus();
+  }, [requestTabStatus]);
 
   const handleSoundSetChange = async profileId => {
     // Find the selected profile
@@ -150,6 +256,7 @@ const Popup = () => {
     // Then update the setting
     setSoundSet(profileId);
     chrome.storage.sync.set({ [STORAGE_KEYS.SOUND_SET]: profileId });
+    setTimeout(requestTabStatus, 200);
   };
 
   const handleVolumeChange = event => {
@@ -166,6 +273,7 @@ const Popup = () => {
       type: MESSAGE_TYPES.TOGGLE_MUTE,
       isMuted: muteState,
     });
+    setTimeout(requestTabStatus, 100);
   };
 
   const toggleTheme = () => {
@@ -173,6 +281,65 @@ const Popup = () => {
     setTheme(newTheme);
     chrome.storage.sync.set({ [STORAGE_KEYS.THEME]: newTheme });
   };
+
+  const buildDiagnosticReport = () => {
+    const selectedProfile = soundProfiles.find(profile => profile.id === soundSet);
+
+    return `Keyboard ASMR Diagnostic
+${JSON.stringify(
+  {
+    generatedAt: new Date().toISOString(),
+    extension: {
+      version: chrome.runtime.getManifest?.().version || 'unknown',
+    },
+    popup: {
+      selectedProfile: soundSet,
+      selectedProfileName: selectedProfile?.name || 'unknown',
+      muted: isMuted,
+      volumePercent: volume,
+      profilesLoaded: soundProfiles.length,
+    },
+    tab: tabStatus.report || {
+      state: tabStatus.state,
+      reason: tabStatus.reason || 'no_content_status',
+    },
+  },
+  null,
+  2
+)}`;
+  };
+
+  const copyDiagnosticReport = async () => {
+    const report = buildDiagnosticReport();
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(report);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = report;
+        textArea.setAttribute('readonly', '');
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+
+      setCopyState('copied');
+      setTimeout(() => setCopyState('idle'), STATUS_COPY_RESET_DELAY);
+    } catch (error) {
+      console.error('Failed to copy diagnostic report:', error);
+      setCopyState('failed');
+      setTimeout(() => setCopyState('idle'), STATUS_COPY_RESET_DELAY);
+    }
+  };
+
+  const statusReport = tabStatus.report;
+  const statusAudio =
+    statusReport?.audioContextState === 'suspended' ? 'waiting' : statusReport?.audioContextState;
+  const statusLastError = statusReport?.stats?.lastErrorCode || 'none';
 
   return (
     <div className={`popup-container ${theme}`}>
@@ -199,6 +366,39 @@ const Popup = () => {
           </a>
           <button className='icon-btn' onClick={toggleTheme} title='Toggle theme'>
             {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+        </div>
+      </div>
+
+      {/* Current Tab Status */}
+      <div className={`status-panel ${tabStatus.state}`}>
+        <div className='status-header'>
+          <div>
+            <h2>Current Tab</h2>
+            <p>{tabStatus.title}</p>
+          </div>
+          <span className='status-pill'>{tabStatus.state}</span>
+        </div>
+        <p className='status-message'>{tabStatus.message}</p>
+        <div className='status-metrics'>
+          <StatusMetric label='Capture' value={statusReport?.captureMode || 'none'} />
+          <StatusMetric label='Audio' value={statusAudio || 'none'} />
+          <StatusMetric
+            label='Profile'
+            value={statusReport?.selectedProfileLoaded ? 'loaded' : 'unknown'}
+          />
+          <StatusMetric label='Errors' value={statusLastError} />
+        </div>
+        <div className='status-actions'>
+          <button className='status-action-btn' onClick={requestTabStatus}>
+            Check
+          </button>
+          <button className='status-action-btn' onClick={copyDiagnosticReport}>
+            {copyState === 'copied'
+              ? 'Copied'
+              : copyState === 'failed'
+              ? 'Copy failed'
+              : 'Copy Report'}
           </button>
         </div>
       </div>

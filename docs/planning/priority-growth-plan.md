@@ -1,0 +1,66 @@
+# Keyboard ASMR Priority Growth Plan
+
+## Constraints
+
+- Do not add broad Chrome permissions while the excessive-permissions review is active.
+- Do not collect typed content, raw key values, raw URLs, or browsing history.
+- Keep reliability work ahead of monetization so paid features do not amplify support issues.
+- Update Chrome Web Store privacy disclosures before shipping analytics or diagnostic uploads.
+- Treat Chrome Web Store GA opt-in as listing analytics only; do not assume it covers in-extension usage.
+- Do not add in-extension analytics until cost, limits, privacy disclosure, and implementation path are confirmed.
+
+## Phase 1: Review-Safe Reliability
+
+- [x] Remove runtime code paths that rely on undeclared or unnecessary Chrome APIs.
+- [x] Add a popup status panel that explains whether the current tab can run the extension.
+- [x] Add a one-click local diagnostic report with audio state, profile state, injection mode, and last error.
+- [x] Add install/update guidance: refresh existing tabs; unsupported on Chrome Web Store, chrome:// pages, and address bar.
+- [x] Add compatibility test pages for input, textarea, contenteditable, same-origin iframe, cross-origin iframe, and editor-like surfaces.
+
+## Phase 2: Performance
+
+- [ ] Lazy-load only the selected sound profile in content scripts.
+- [ ] Move bundled profile/audio validation to build time.
+- [ ] Cache decoded audio buffers per profile and avoid reloading all profiles when one setting changes.
+- [ ] Debounce high-frequency storage writes from volume slider changes.
+- [ ] Add lightweight runtime counters for injection fallback, audio init failure, decode failure, and first sound success.
+
+## Phase 3: Privacy-Safe Analytics
+
+- [ ] Enable the Chrome Web Store Developer Dashboard GA opt-in for listing views and install events.
+- [ ] Confirm whether the dashboard-created GA4 property exposes a Measurement Protocol API secret for in-extension events.
+- [ ] Implement GA4 Measurement Protocol or a minimal first-party endpoint with an anonymous client id in `chrome.storage.local` only if needed.
+- [ ] Track install/update, popup open, profile select, preview play, mute toggle, volume bucket, status result, diagnostic copy, and first sound success.
+- [ ] Track error classes only, not typed keys, typed text, raw page URLs, or browsing history.
+- [ ] Add a privacy note in popup/settings before enabling diagnostic upload or analytics.
+- [ ] Create GA dashboards for activation, profile demand, reliability failure rate, retention, and conversion intent.
+
+## Phase 4: Product Upgrades
+
+- [ ] Per-site settings: enable/disable, profile, and volume by domain.
+- [ ] Key-category mapping: letters, numbers, space, enter, backspace, arrows, modifiers, and WASD.
+- [ ] Humanization controls: pitch variation, volume variation, repeat behavior, press/release mode, and loudness normalization.
+- [ ] Custom sound importer for local WAV/MP3 packs.
+- [ ] Ambience layer: rain, room tone, lofi, white noise, and desk ambience.
+- [ ] Better compatibility modes for Google Docs, ChatGPT, Notion, Slack, Discord, and code editors.
+
+## Phase 5: Monetization
+
+- [ ] Freemium model: useful free base profiles plus premium pack bundles.
+- [ ] Start with a lifetime unlock before testing subscriptions.
+- [ ] Add a premium pack pipeline with licensing checks before using brand or switch names commercially.
+- [ ] Add partner/sponsored packs only with clear disclosure and licensed assets.
+- [ ] Add affiliate links only from explicit user clicks in popup/website, never injected into pages.
+- [ ] Explore a paid desktop companion for system-wide typing sounds beyond browser pages.
+
+## Phase 6: Expansion
+
+- [ ] Publish Edge and Firefox builds after reliability metrics improve.
+- [ ] Build a small landing site for SEO and premium pack sales.
+- [ ] Use short demos to market profile differences.
+- [ ] Add a public request board for sound packs and compatibility reports.
+- [ ] Localize popup/listing for top traffic geographies once analytics identifies them.
+
+## Current Next Step
+
+Next: start Phase 2 by lazy-loading only the selected sound profile in content scripts.

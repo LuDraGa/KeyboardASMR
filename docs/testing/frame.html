@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Keyboard ASMR Frame Test</title>
+    <link rel="icon" href="data:," />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 14px;
+        color: #172033;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      h1,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 16px;
+      }
+
+      p {
+        margin-top: 4px;
+        color: #667085;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      input,
+      textarea,
+      .editable {
+        width: 100%;
+        margin-top: 10px;
+        padding: 9px 10px;
+        border: 1px solid #d9e0ea;
+        border-radius: 6px;
+        font: inherit;
+      }
+
+      textarea {
+        min-height: 58px;
+        resize: vertical;
+      }
+
+      .editable {
+        min-height: 44px;
+        outline: none;
+      }
+
+      .counter {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .counter div {
+        padding: 8px;
+        border-radius: 6px;
+        background: #eef4ff;
+      }
+
+      span,
+      strong {
+        display: block;
+      }
+
+      span {
+        color: #667085;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      strong {
+        margin-top: 3px;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 id="title">Frame typing test</h1>
+    <p>
+      Type in each field. The parent page cannot inspect this frame when it is cross-origin, so use
+      sound plus the extension popup status to verify it.
+    </p>
+
+    <input type="text" placeholder="Frame text input" />
+    <textarea placeholder="Frame textarea"></textarea>
+    <div class="editable" contenteditable="true" role="textbox" aria-multiline="true">
+      Frame contenteditable area.
+    </div>
+
+    <div class="counter">
+      <div>
+        <span>Keydown</span>
+        <strong id="keydown-count">0</strong>
+      </div>
+      <div>
+        <span>Keyup</span>
+        <strong id="keyup-count">0</strong>
+      </div>
+      <div>
+        <span>Last event</span>
+        <strong id="last-event">none</strong>
+      </div>
+    </div>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const kind = params.get('kind') || 'frame';
+      const counts = {
+        keydown: 0,
+        keyup: 0,
+      };
+
+      document.getElementById('title').textContent = `Frame typing test: ${kind}`;
+
+      function update(event) {
+        if (event.type === 'keydown') counts.keydown += 1;
+        if (event.type === 'keyup') counts.keyup += 1;
+
+        document.getElementById('keydown-count').textContent = String(counts.keydown);
+        document.getElementById('keyup-count').textContent = String(counts.keyup);
+        document.getElementById('last-event').textContent = event.type;
+      }
+
+      document.addEventListener('keydown', update, true);
+      document.addEventListener('keyup', update, true);
+    </script>
+  </body>
+</html>
