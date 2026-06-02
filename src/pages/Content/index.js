@@ -35,21 +35,76 @@ let fallbackListenersEnabled = false;
 const FALLBACK_TIMEOUT = 500; // Enable fallback if no heartbeat after 500ms
 
 const runtimeStats = {
+  contentScriptStartedAt: new Date().toISOString(),
   loadedSoundCount: 0,
   failedSoundCount: 0,
   loadAttemptCount: 0,
   keyEventCount: 0,
   playedSoundCount: 0,
   droppedSoundCount: 0,
+  droppedBeforeFirstSoundCount: 0,
+  firstSoundSuccessCount: 0,
+  audioInitFailureCount: 0,
+  audioResumeFailureCount: 0,
+  soundFetchFailureCount: 0,
+  decodeFailureCount: 0,
+  profileLoadFailureCount: 0,
+  soundPlayFailureCount: 0,
+  injectionFallbackCount: 0,
+  firstEventAt: null,
+  firstSoundAt: null,
+  firstSoundLatencyMs: null,
+  firstSoundFailureCode: null,
   lastEventAt: null,
   lastSoundAt: null,
   lastErrorCode: null,
   lastErrorAt: null,
+  lastErrorContext: null,
+  errorCounts: {},
 };
 
-function recordError(code) {
+function recordError(code, context = null) {
+  runtimeStats.errorCounts[code] = (runtimeStats.errorCounts[code] || 0) + 1;
   runtimeStats.lastErrorCode = code;
   runtimeStats.lastErrorAt = new Date().toISOString();
+  runtimeStats.lastErrorContext = context;
+}
+
+function recordKeyEvent() {
+  const now = Date.now();
+  const timestamp = new Date(now).toISOString();
+
+  runtimeStats.keyEventCount += 1;
+  runtimeStats.lastEventAt = timestamp;
+
+  if (!runtimeStats.firstEventAt) {
+    runtimeStats.firstEventAt = timestamp;
+  }
+}
+
+function recordDroppedSound(reason) {
+  runtimeStats.droppedSoundCount += 1;
+
+  if (!runtimeStats.firstSoundAt) {
+    runtimeStats.droppedBeforeFirstSoundCount += 1;
+    runtimeStats.firstSoundFailureCode = runtimeStats.firstSoundFailureCode || reason;
+  }
+}
+
+function recordPlayedSound() {
+  const now = Date.now();
+  const timestamp = new Date(now).toISOString();
+
+  runtimeStats.playedSoundCount += 1;
+  runtimeStats.lastSoundAt = timestamp;
+
+  if (!runtimeStats.firstSoundAt) {
+    runtimeStats.firstSoundAt = timestamp;
+    runtimeStats.firstSoundSuccessCount += 1;
+    runtimeStats.firstSoundLatencyMs = runtimeStats.firstEventAt
+      ? now - Date.parse(runtimeStats.firstEventAt)
+      : null;
+  }
 }
 
 function getContentStatus() {
@@ -98,6 +153,7 @@ async function initAudio() {
       await activateSoundSet(currentSoundSet);
       console.log('Keyboard ASMR: Audio initialized successfully');
     } catch (error) {
+      runtimeStats.audioInitFailureCount += 1;
       recordError('audio_init_failed');
       if (!audioContext) {
         isAudioInitialized = false;
@@ -122,6 +178,7 @@ async function ensureAudioContextResumed() {
     audioContextResumed = true;
     console.log('Keyboard ASMR: AudioContext resumed');
   } catch (error) {
+    runtimeStats.audioResumeFailureCount += 1;
     recordError('audio_resume_failed');
     console.error('Keyboard ASMR: Failed to resume AudioContext:', error);
   }
@@ -142,6 +199,8 @@ async function loadSound(url) {
     return decodedAudioCache.get(requestUrl);
   }
 
+  let arrayBuffer;
+
   try {
     runtimeStats.loadAttemptCount += 1;
     const response = await fetch(requestUrl);
@@ -149,15 +208,31 @@ async function loadSound(url) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const arrayBuffer = await response.arrayBuffer();
+    arrayBuffer = await response.arrayBuffer();
+  } catch (error) {
+    runtimeStats.failedSoundCount += 1;
+    runtimeStats.soundFetchFailureCount += 1;
+    recordError('sound_fetch_failed', {
+      profile: pendingSoundSet || activeSoundSet || currentSoundSet,
+      soundPath: url,
+    });
+    console.error(`Keyboard ASMR: Error fetching sound: ${url}`, error);
+    return null;
+  }
+
+  try {
     const decodedAudio = await audioContext.decodeAudioData(arrayBuffer);
     decodedAudioCache.set(requestUrl, decodedAudio);
     runtimeStats.loadedSoundCount += 1;
     return decodedAudio;
   } catch (error) {
     runtimeStats.failedSoundCount += 1;
-    recordError('sound_load_failed');
-    console.error(`Keyboard ASMR: Error loading sound: ${url}`, error);
+    runtimeStats.decodeFailureCount += 1;
+    recordError('sound_decode_failed', {
+      profile: pendingSoundSet || activeSoundSet || currentSoundSet,
+      soundPath: url,
+    });
+    console.error(`Keyboard ASMR: Error decoding sound: ${url}`, error);
     return null;
   }
 }
@@ -238,7 +313,8 @@ async function activateSoundSet(soundSetId) {
     console.log(`Keyboard ASMR: Activated sound profile ${resolvedSoundSet}`);
     return true;
   } catch (error) {
-    recordError('profile_load_failed');
+    runtimeStats.profileLoadFailureCount += 1;
+    recordError('profile_load_failed', { profile: resolvedSoundSet });
 
     if (token === soundLoadToken) {
       pendingSoundSet = null;
@@ -268,7 +344,14 @@ async function playSound(key, eventType = 'keydown') {
 
   // If null (explicitly disabled) or still undefined, or no audioContext, return (no sound)
   if (!buffer || !audioContext) {
-    runtimeStats.droppedSoundCount += 1;
+    const dropReason = !audioContext
+      ? 'audio_context_missing'
+      : !soundBuffers[playbackSoundSet]
+      ? 'profile_not_loaded'
+      : buffer === null
+      ? 'mapping_disabled'
+      : 'buffer_unavailable';
+    recordDroppedSound(dropReason);
     return;
   }
 
@@ -283,9 +366,9 @@ async function playSound(key, eventType = 'keydown') {
     gainNode.connect(audioContext.destination);
 
     source.start(0);
-    runtimeStats.playedSoundCount += 1;
-    runtimeStats.lastSoundAt = new Date().toISOString();
+    recordPlayedSound();
   } catch (error) {
+    runtimeStats.soundPlayFailureCount += 1;
     recordError('sound_play_failed');
     console.error('Keyboard ASMR: Error playing sound:', error);
   }
@@ -355,8 +438,7 @@ window.addEventListener('message', async event => {
 
     // Handle keypress events
     if (event.data?.type === 'KEYPRESS') {
-      runtimeStats.keyEventCount += 1;
-      runtimeStats.lastEventAt = new Date().toISOString();
+      recordKeyEvent();
 
       // Initialize audio on first keypress if needed
       if (!isAudioInitialized) {
@@ -426,8 +508,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function handleFallbackKeydown(event) {
   if (isMuted) return;
 
-  runtimeStats.keyEventCount += 1;
-  runtimeStats.lastEventAt = new Date().toISOString();
+  recordKeyEvent();
 
   // Initialize audio on first keypress if needed
   if (!isAudioInitialized) {
@@ -442,8 +523,7 @@ async function handleFallbackKeydown(event) {
 async function handleFallbackKeyup(event) {
   if (isMuted) return;
 
-  runtimeStats.keyEventCount += 1;
-  runtimeStats.lastEventAt = new Date().toISOString();
+  recordKeyEvent();
 
   // Initialize audio if needed
   if (!isAudioInitialized) {
@@ -455,7 +535,10 @@ async function handleFallbackKeyup(event) {
 
 // Enable fallback listeners only if injected script fails to load
 function enableFallbackListeners() {
+  if (fallbackListenersEnabled) return;
+
   fallbackListenersEnabled = true;
+  runtimeStats.injectionFallbackCount += 1;
   console.log('Keyboard ASMR: Enabling fallback event listeners');
   document.addEventListener('keydown', handleFallbackKeydown);
   document.addEventListener('keyup', handleFallbackKeyup);

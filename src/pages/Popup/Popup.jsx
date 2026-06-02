@@ -11,14 +11,62 @@ import { profileLoader } from '../../utils/profileLoader';
 const STATUS_COPY_RESET_DELAY = 1500;
 const VOLUME_WRITE_DELAY = 250;
 
-const createDisconnectedStatus = reason => ({
+const createDisconnectedStatus = (reason, context = {}) => ({
   state: 'disconnected',
   title: 'Keyboard ASMR is not active here',
   message:
     'Refresh this tab to start Keyboard ASMR. Chrome pages and the address bar are unsupported.',
   reason,
+  context,
   report: null,
 });
+
+const getTabContext = tab => {
+  const context = {
+    activeTabPresent: Boolean(tab),
+    tabIdPresent: Boolean(tab?.id),
+    loadStatus: tab?.status || 'unknown',
+    urlAvailable: false,
+    urlScheme: 'unavailable',
+    pageType: 'unknown',
+  };
+
+  const tabUrl = tab?.url || tab?.pendingUrl;
+  if (!tabUrl) {
+    return context;
+  }
+
+  try {
+    const parsedUrl = new URL(tabUrl);
+    const scheme = parsedUrl.protocol.replace(':', '');
+
+    context.urlAvailable = true;
+    context.urlScheme = scheme;
+
+    if (['chrome', 'edge', 'about', 'devtools'].includes(scheme)) {
+      context.pageType = 'browser_internal';
+    } else if (scheme === 'chrome-extension') {
+      context.pageType = 'extension_page';
+    } else if (scheme === 'file') {
+      context.pageType = 'local_file';
+    } else if (
+      parsedUrl.hostname === 'chromewebstore.google.com' ||
+      parsedUrl.hostname === 'chrome.google.com'
+    ) {
+      context.pageType = 'chrome_web_store';
+    } else if (scheme === 'http' || scheme === 'https') {
+      context.pageType = 'regular_web';
+    } else {
+      context.pageType = 'other';
+    }
+  } catch (error) {
+    context.urlAvailable = true;
+    context.urlScheme = 'parse_failed';
+    context.pageType = 'unknown';
+  }
+
+  return context;
+};
 
 const getStatusFromReport = report => {
   if (report.muted) {
@@ -63,6 +111,74 @@ const getStatusFromReport = report => {
     message: 'Typing should play on this tab.',
     report,
   };
+};
+
+const getDiagnosticHints = tabStatus => {
+  const hints = [];
+  const report = tabStatus.report;
+  const stats = report?.stats || {};
+
+  if (tabStatus.state === 'disconnected') {
+    if (
+      tabStatus.context?.pageType === 'browser_internal' ||
+      tabStatus.context?.pageType === 'chrome_web_store' ||
+      tabStatus.context?.pageType === 'extension_page'
+    ) {
+      hints.push('Current page type is unsupported by Chrome extension content scripts.');
+    } else {
+      hints.push(
+        'Content script is not reachable; refresh tabs that were open before install/update.'
+      );
+    }
+  }
+
+  if (report?.muted) {
+    hints.push('Extension is muted.');
+  }
+
+  if (report?.profileLoading) {
+    hints.push(
+      'Selected profile is still loading; previous loaded profile should continue playing.'
+    );
+  }
+
+  if (report && !report.selectedProfileLoaded && !report.activeProfileLoaded) {
+    hints.push('No playable profile is loaded in the current tab.');
+  }
+
+  if (stats.audioInitFailureCount > 0) {
+    hints.push('Audio context initialization failed in this tab.');
+  }
+
+  if (stats.audioResumeFailureCount > 0) {
+    hints.push('Audio context resume failed after user interaction.');
+  }
+
+  if (stats.soundFetchFailureCount > 0) {
+    hints.push('One or more bundled sound files could not be fetched.');
+  }
+
+  if (stats.decodeFailureCount > 0) {
+    hints.push('One or more sound files could not be decoded by Web Audio.');
+  }
+
+  if (stats.profileLoadFailureCount > 0) {
+    hints.push('Selected profile failed to load in this tab.');
+  }
+
+  if (stats.keyEventCount > 0 && !stats.firstSoundAt && !report?.muted) {
+    hints.push('Key events were detected, but no first sound has played yet.');
+  }
+
+  if (stats.injectionFallbackCount > 0) {
+    hints.push('Page is using compatibility capture mode.');
+  }
+
+  if (stats.firstSoundAt) {
+    hints.push('First sound has played successfully in this tab.');
+  }
+
+  return hints;
 };
 
 const Popup = () => {
@@ -111,25 +227,34 @@ const Popup = () => {
     });
 
     if (!chrome.tabs?.query) {
-      setTabStatus(createDisconnectedStatus('tabs_api_unavailable'));
+      setTabStatus(createDisconnectedStatus('tabs_api_unavailable', { tabsApiAvailable: false }));
       return;
     }
 
     chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
       if (chrome.runtime.lastError) {
-        setTabStatus(createDisconnectedStatus('active_tab_query_failed'));
+        setTabStatus(
+          createDisconnectedStatus('active_tab_query_failed', {
+            lastErrorMessage: chrome.runtime.lastError.message,
+          })
+        );
         return;
       }
 
       const activeTab = tabs?.[0];
       if (!activeTab?.id) {
-        setTabStatus(createDisconnectedStatus('active_tab_missing'));
+        setTabStatus(createDisconnectedStatus('active_tab_missing', getTabContext(activeTab)));
         return;
       }
 
       chrome.tabs.sendMessage(activeTab.id, { type: MESSAGE_TYPES.GET_STATUS }, response => {
         if (chrome.runtime.lastError || !response?.ok) {
-          setTabStatus(createDisconnectedStatus('content_script_unavailable'));
+          setTabStatus(
+            createDisconnectedStatus('content_script_unavailable', {
+              ...getTabContext(activeTab),
+              lastErrorMessage: chrome.runtime.lastError?.message || 'no_status_response',
+            })
+          );
           return;
         }
 
@@ -322,24 +447,45 @@ const Popup = () => {
 
   const buildDiagnosticReport = () => {
     const selectedProfile = soundProfiles.find(profile => profile.id === soundSet);
+    const diagnosticHints = getDiagnosticHints(tabStatus);
 
     return `Keyboard ASMR Diagnostic
 ${JSON.stringify(
   {
     generatedAt: new Date().toISOString(),
+    privacy: {
+      excludes: ['typed text', 'raw key values', 'raw page URLs', 'browsing history'],
+    },
     extension: {
       version: chrome.runtime.getManifest?.().version || 'unknown',
     },
+    environment: {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      language: navigator.language,
+    },
     popup: {
+      statusState: tabStatus.state,
+      statusTitle: tabStatus.title,
       selectedProfile: soundSet,
       selectedProfileName: selectedProfile?.name || 'unknown',
       muted: isMuted,
       volumePercent: volume,
       profilesLoaded: soundProfiles.length,
     },
+    diagnosis: {
+      hints: diagnosticHints,
+      lastErrorCode: tabStatus.report?.stats?.lastErrorCode || null,
+      lastErrorAt: tabStatus.report?.stats?.lastErrorAt || null,
+      lastErrorContext: tabStatus.report?.stats?.lastErrorContext || null,
+      firstSoundAt: tabStatus.report?.stats?.firstSoundAt || null,
+      firstSoundLatencyMs: tabStatus.report?.stats?.firstSoundLatencyMs || null,
+      firstSoundFailureCode: tabStatus.report?.stats?.firstSoundFailureCode || null,
+    },
     tab: tabStatus.report || {
       state: tabStatus.state,
       reason: tabStatus.reason || 'no_content_status',
+      context: tabStatus.context || {},
     },
   },
   null,
