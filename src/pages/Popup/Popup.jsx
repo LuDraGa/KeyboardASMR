@@ -174,6 +174,10 @@ const getDiagnosticHints = tabStatus => {
     hints.push('Page is using compatibility capture mode.');
   }
 
+  if (report?.compatibilityModes?.length > 0) {
+    hints.push(`Detected compatibility mode: ${report.compatibilityModes.join(', ')}.`);
+  }
+
   if (stats.firstSoundAt) {
     hints.push('First sound has played successfully in this tab.');
   }
@@ -481,6 +485,8 @@ ${JSON.stringify(
       firstSoundAt: tabStatus.report?.stats?.firstSoundAt || null,
       firstSoundLatencyMs: tabStatus.report?.stats?.firstSoundLatencyMs || null,
       firstSoundFailureCode: tabStatus.report?.stats?.firstSoundFailureCode || null,
+      keyCategoryCounts: tabStatus.report?.stats?.keyCategoryCounts || {},
+      compatibilityModes: tabStatus.report?.compatibilityModes || [],
     },
     tab: tabStatus.report || {
       state: tabStatus.state,

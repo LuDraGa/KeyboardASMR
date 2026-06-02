@@ -4,6 +4,7 @@ import {
   STORAGE_KEYS,
   resolveSoundSetId,
 } from '../../shared/config';
+import { getKeyPlaybackInfo, getPlaybackCandidates } from '../../shared/keyCategories';
 import { profileLoader } from '../../utils/profileLoader';
 
 // State management
@@ -22,6 +23,7 @@ let audioContextResumed = false;
 let activeSoundSet = null;
 let pendingSoundSet = null;
 let soundLoadToken = 0;
+let compatibilityModes = [];
 
 let resolveInitialSettingsReady;
 const initialSettingsReady = new Promise(resolve => {
@@ -55,6 +57,7 @@ const runtimeStats = {
   firstSoundAt: null,
   firstSoundLatencyMs: null,
   firstSoundFailureCode: null,
+  keyCategoryCounts: {},
   lastEventAt: null,
   lastSoundAt: null,
   lastErrorCode: null,
@@ -70,11 +73,13 @@ function recordError(code, context = null) {
   runtimeStats.lastErrorContext = context;
 }
 
-function recordKeyEvent() {
+function recordKeyEvent(keyCategory = 'unknown') {
   const now = Date.now();
   const timestamp = new Date(now).toISOString();
 
   runtimeStats.keyEventCount += 1;
+  runtimeStats.keyCategoryCounts[keyCategory] =
+    (runtimeStats.keyCategoryCounts[keyCategory] || 0) + 1;
   runtimeStats.lastEventAt = timestamp;
 
   if (!runtimeStats.firstEventAt) {
@@ -125,6 +130,7 @@ function getContentStatus() {
     audioInitialized: isAudioInitialized,
     audioContextState: audioContext?.state || 'none',
     audioContextResumed,
+    compatibilityModes,
     captureMode: injectedScriptActive
       ? 'injected'
       : fallbackListenersEnabled
@@ -326,20 +332,21 @@ async function activateSoundSet(soundSetId) {
 }
 
 // Play sound directly in content script
-async function playSound(key, eventType = 'keydown') {
+async function playSound(playbackInfo, eventType = 'keydown') {
   if (isMuted || !isAudioInitialized) return;
 
   // Ensure AudioContext is resumed before playing
   await ensureAudioContextResumed();
 
   const playbackSoundSet = activeSoundSet || currentSoundSet;
+  const candidates = getPlaybackCandidates(playbackInfo);
+  let buffer;
 
-  // Try specific key + event type
-  let buffer = soundBuffers[playbackSoundSet]?.[key]?.[eventType];
-
-  // If undefined (not explicitly set), fall back to default
-  if (buffer === undefined) {
-    buffer = soundBuffers[playbackSoundSet]?.default?.[eventType];
+  for (const candidate of candidates) {
+    buffer = soundBuffers[playbackSoundSet]?.[candidate]?.[eventType];
+    if (buffer !== undefined) {
+      break;
+    }
   }
 
   // If null (explicitly disabled) or still undefined, or no audioContext, return (no sound)
@@ -432,13 +439,24 @@ window.addEventListener('message', async event => {
     // Handle ready signal from injected script
     if (event.data?.type === 'INJECTED_READY') {
       injectedScriptActive = true;
+      compatibilityModes = event.data?.data?.modes || [];
       console.log('Keyboard ASMR: Injected script confirmed active, disabling fallback listeners');
+      return;
+    }
+
+    if (event.data?.type === 'COMPATIBILITY_STATUS') {
+      compatibilityModes = event.data?.data?.modes || [];
       return;
     }
 
     // Handle keypress events
     if (event.data?.type === 'KEYPRESS') {
-      recordKeyEvent();
+      const keyEventData = event.data.data || {};
+      const { eventType, keyCategory, playbackKey, location } = keyEventData;
+      const playbackInfo = playbackKey
+        ? { playbackKey, keyCategory, location }
+        : getKeyPlaybackInfo(keyEventData);
+      recordKeyEvent(playbackInfo.keyCategory);
 
       // Initialize audio on first keypress if needed
       if (!isAudioInitialized) {
@@ -447,8 +465,7 @@ window.addEventListener('message', async event => {
 
       // Play sound directly (only if not muted)
       if (!isMuted) {
-        const { key, eventType } = event.data.data;
-        await playSound(key, eventType || 'keydown'); // Default to keydown for backward compat
+        await playSound(playbackInfo, eventType || 'keydown'); // Default to keydown for backward compat
       }
     }
   }
@@ -508,7 +525,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function handleFallbackKeydown(event) {
   if (isMuted) return;
 
-  recordKeyEvent();
+  const playbackInfo = getKeyPlaybackInfo(event);
+  recordKeyEvent(playbackInfo.keyCategory);
 
   // Initialize audio on first keypress if needed
   if (!isAudioInitialized) {
@@ -517,20 +535,21 @@ async function handleFallbackKeydown(event) {
 
   // Determine event type based on repeat flag
   const eventType = event.repeat ? 'keypress' : 'keydown';
-  await playSound(event.key, eventType);
+  await playSound(playbackInfo, eventType);
 }
 
 async function handleFallbackKeyup(event) {
   if (isMuted) return;
 
-  recordKeyEvent();
+  const playbackInfo = getKeyPlaybackInfo(event);
+  recordKeyEvent(playbackInfo.keyCategory);
 
   // Initialize audio if needed
   if (!isAudioInitialized) {
     await initAudio();
   }
 
-  await playSound(event.key, 'keyup');
+  await playSound(playbackInfo, 'keyup');
 }
 
 // Enable fallback listeners only if injected script fails to load

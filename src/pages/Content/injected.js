@@ -1,3 +1,5 @@
+import { getKeyPlaybackInfo } from '../../shared/keyCategories';
+
 // This script is injected directly into the page context
 // It captures keyboard events at the window level for maximum compatibility
 (function () {
@@ -9,6 +11,92 @@
   // Debounce configuration
   const DEBOUNCE_DELAY = 30; // milliseconds
   const lastEventTimes = new Map(); // Track per (key, eventType) for debouncing
+  const activeCompatibilityModes = new Set();
+  let compatibilityStatusTimer = null;
+
+  const COMPATIBILITY_RULES = [
+    {
+      mode: 'google_docs',
+      hosts: ['docs.google.com'],
+      selectors: ['.kix-appview-editor', '.docs-texteventtarget-iframe'],
+      allowDocumentWhenPresent: true,
+    },
+    {
+      mode: 'chatgpt',
+      hosts: ['chatgpt.com', 'chat.openai.com'],
+      selectors: [
+        '#prompt-textarea',
+        '[contenteditable="true"][data-testid*="prompt"]',
+        'textarea',
+      ],
+    },
+    {
+      mode: 'notion',
+      hosts: ['notion.so', 'www.notion.so'],
+      selectors: ['[contenteditable="true"]', '.notion-page-content'],
+    },
+    {
+      mode: 'slack',
+      hostIncludes: ['slack.com'],
+      selectors: ['[data-qa="message_input"]', '[contenteditable="true"][role="textbox"]'],
+    },
+    {
+      mode: 'discord',
+      hosts: ['discord.com', 'ptb.discord.com', 'canary.discord.com'],
+      selectors: ['[role="textbox"][contenteditable="true"]', '[data-slate-editor="true"]'],
+    },
+    {
+      mode: 'code_editor',
+      selectors: [
+        '.CodeMirror',
+        '.cm-editor',
+        '.monaco-editor',
+        '.ace_editor',
+        'textarea.inputarea',
+      ],
+    },
+  ];
+
+  function publishCompatibilityStatus() {
+    if (compatibilityStatusTimer) {
+      clearTimeout(compatibilityStatusTimer);
+    }
+
+    compatibilityStatusTimer = setTimeout(() => {
+      window.postMessage(
+        {
+          source: MESSAGE_SOURCE,
+          type: 'COMPATIBILITY_STATUS',
+          data: {
+            modes: Array.from(activeCompatibilityModes).sort(),
+          },
+        },
+        '*'
+      );
+    }, 50);
+  }
+
+  function hostnameMatches(rule) {
+    const hostname = window.location.hostname;
+
+    if (rule.hosts?.includes(hostname)) {
+      return true;
+    }
+
+    return rule.hostIncludes?.some(hostPart => hostname.includes(hostPart)) || false;
+  }
+
+  function matchesSelector(element, selector) {
+    if (!element || element === window || element === document || !element.matches) {
+      return false;
+    }
+
+    try {
+      return element.matches(selector) || Boolean(element.closest?.(selector));
+    } catch (error) {
+      return false;
+    }
+  }
 
   function isTypingElement(element) {
     if (!element || element === window || element === document) {
@@ -24,19 +112,64 @@
 
   // Keyboard events from Shadow DOM are retargeted to the host. Use the
   // composed path so shadow inputs/editors are still treated as typing surfaces.
-  function getCaptureTarget(event) {
+  function getCompatibilityTarget(event) {
+    const eventPath = typeof event.composedPath === 'function' ? event.composedPath() : [];
+
+    for (const rule of COMPATIBILITY_RULES) {
+      if ((rule.hosts || rule.hostIncludes) && !hostnameMatches(rule)) {
+        continue;
+      }
+
+      const matchedPathTarget = eventPath.find(element =>
+        rule.selectors.some(selector => matchesSelector(element, selector))
+      );
+
+      if (matchedPathTarget) {
+        activeCompatibilityModes.add(rule.mode);
+        publishCompatibilityStatus();
+        return {
+          target: matchedPathTarget,
+          mode: rule.mode,
+        };
+      }
+
+      if (rule.allowDocumentWhenPresent) {
+        const existingTarget = rule.selectors
+          .map(selector => document.querySelector(selector))
+          .find(Boolean);
+
+        if (existingTarget) {
+          activeCompatibilityModes.add(rule.mode);
+          publishCompatibilityStatus();
+          return {
+            target: existingTarget,
+            mode: rule.mode,
+          };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  function getCaptureContext(event) {
     if (isTypingElement(event.target)) {
-      return event.target;
+      return { target: event.target, mode: null };
     }
 
     const eventPath = typeof event.composedPath === 'function' ? event.composedPath() : [];
     const typingTarget = eventPath.find(isTypingElement);
 
     if (typingTarget) {
-      return typingTarget;
+      return { target: typingTarget, mode: null };
     }
 
-    return event.target?.tagName ? null : event.target;
+    const compatibilityTarget = getCompatibilityTarget(event);
+    if (compatibilityTarget) {
+      return compatibilityTarget;
+    }
+
+    return event.target?.tagName ? null : { target: event.target, mode: null };
   }
 
   // Enhanced keyboard event handler
@@ -47,10 +180,12 @@
     }
 
     // Check if we should capture from this element
-    const captureTarget = getCaptureTarget(event);
-    if (!captureTarget) {
+    const captureContext = getCaptureContext(event);
+    if (!captureContext?.target) {
       return;
     }
+    const captureTarget = captureContext.target;
+    const playbackInfo = getKeyPlaybackInfo(event);
 
     // Determine event type
     let eventType;
@@ -64,7 +199,7 @@
 
     // Debounce per (key, eventType) pair
     const currentTime = Date.now();
-    const debounceKey = `${event.key}_${eventType}`;
+    const debounceKey = `${playbackInfo.playbackKey}_${eventType}`;
     const lastTime = lastEventTimes.get(debounceKey) || 0;
 
     if (currentTime - lastTime < DEBOUNCE_DELAY) {
@@ -78,8 +213,8 @@
         source: MESSAGE_SOURCE,
         type: 'KEYPRESS',
         data: {
-          key: event.key,
-          code: event.code,
+          playbackKey: playbackInfo.playbackKey,
+          keyCategory: playbackInfo.keyCategory,
           eventType: eventType,
           timestamp: currentTime,
           isComposing: event.isComposing || false,
@@ -90,6 +225,7 @@
             isContentEditable: captureTarget.isContentEditable,
             type: captureTarget.type,
             wasRetargeted: captureTarget !== event.target,
+            compatibilityMode: captureContext.mode,
           },
         },
       },
@@ -111,6 +247,7 @@
     if (window.location.hostname.includes('docs.google.com')) {
       const docsEditor = document.querySelector('.kix-appview-editor');
       if (docsEditor) {
+        activeCompatibilityModes.add('google_docs');
         docsEditor.addEventListener('keydown', handleKeyboardEvent, true);
         docsEditor.addEventListener('keyup', handleKeyboardEvent, true);
       }
@@ -121,6 +258,7 @@
       const editors = document.querySelectorAll('.CodeMirror');
       editors.forEach(editor => {
         if (editor.CodeMirror) {
+          activeCompatibilityModes.add('code_editor');
           editor.CodeMirror.on('keydown', (cm, event) => {
             handleKeyboardEvent(event);
           });
@@ -138,12 +276,18 @@
         const monacoEditors = document.querySelectorAll('.monaco-editor');
         if (monacoEditors.length > 0) {
           clearInterval(checkMonacoEditors);
+          activeCompatibilityModes.add('code_editor');
           monacoEditors.forEach(editor => {
             editor.addEventListener('keydown', handleKeyboardEvent, true);
             editor.addEventListener('keyup', handleKeyboardEvent, true);
           });
+          publishCompatibilityStatus();
         }
       }, 1000);
+    }
+
+    if (activeCompatibilityModes.size > 0) {
+      publishCompatibilityStatus();
     }
   }
 
@@ -159,6 +303,9 @@
     {
       source: MESSAGE_SOURCE,
       type: 'INJECTED_READY',
+      data: {
+        modes: Array.from(activeCompatibilityModes).sort(),
+      },
     },
     '*'
   );

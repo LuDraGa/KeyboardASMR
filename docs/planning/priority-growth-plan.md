@@ -30,6 +30,7 @@
 
 ## Phase 3: Privacy-Safe Analytics
 
+- Decision gate: do this after the focused product work, using only free instrumentation paths unless approved.
 - [ ] Enable the Chrome Web Store Developer Dashboard GA opt-in for listing views and install events.
 - [ ] Confirm whether the dashboard-created GA4 property exposes a Measurement Protocol API secret for in-extension events.
 - [ ] Implement GA4 Measurement Protocol or a minimal first-party endpoint with an anonymous client id in `chrome.storage.local` only if needed.
@@ -41,11 +42,11 @@
 ## Phase 4: Product Upgrades
 
 - [ ] Per-site settings: enable/disable, profile, and volume by domain.
-- [ ] Key-category mapping: letters, numbers, space, enter, backspace, arrows, modifiers, and WASD.
+- [x] Key-category playback mapping: letters, numbers, space, enter, backspace, arrows, modifiers, and WASD.
 - [ ] Humanization controls: pitch variation, volume variation, repeat behavior, press/release mode, and loudness normalization.
 - [ ] Custom sound importer for local WAV/MP3 packs.
 - [ ] Ambience layer: rain, room tone, lofi, white noise, and desk ambience.
-- [ ] Better compatibility modes for Google Docs, ChatGPT, Notion, Slack, Discord, and code editors.
+- [x] Better compatibility modes for Google Docs, ChatGPT, Notion, Slack, Discord, and code editors.
 
 ## Phase 5: Monetization
 

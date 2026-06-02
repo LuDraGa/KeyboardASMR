@@ -286,6 +286,8 @@
           <div class="status" id="textarea-status">Textarea: not tested</div>
           <div class="status" id="editable-status">Contenteditable: not tested</div>
           <div class="status" id="shadow-status">Shadow input: not tested</div>
+          <div class="status" id="app-editor-status">App editor: not tested</div>
+          <div class="status" id="code-editor-status">Code editor: not tested</div>
         </div>
       </section>
 
@@ -351,6 +353,54 @@
           <p>Checks inputs added after the content script has already loaded.</p>
           <button type="button" id="add-input">Add dynamic input</button>
           <div id="dynamic-container"></div>
+        </article>
+
+        <article class="card">
+          <h3>App-like editors</h3>
+          <p>Checks rich editors shaped like ChatGPT, Notion, Slack, and Discord inputs.</p>
+          <label for="chatgpt-like">Prompt-style editor</label>
+          <div
+            id="chatgpt-like"
+            data-test-id="app-editor"
+            contenteditable="true"
+            role="textbox"
+            aria-multiline="true"
+            data-testid="prompt-textarea"
+            class="editable"
+          >
+            Type letters, numbers, WASD, arrows, modifiers, Enter, and Backspace here.
+          </div>
+          <label for="slate-like">Slate-style editor</label>
+          <div
+            id="slate-like"
+            data-test-id="app-editor"
+            contenteditable="true"
+            role="textbox"
+            aria-multiline="true"
+            data-slate-editor="true"
+            class="editable"
+          >
+            Type here too.
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Code editor shells</h3>
+          <p>Checks common editor containers used by Monaco, CodeMirror, and Ace-style editors.</p>
+          <label for="monaco-like">Monaco-like editor</label>
+          <div id="monaco-like" class="monaco-editor editor-shell" data-test-id="code-editor">
+            <textarea
+              class="inputarea"
+              spellcheck="false"
+              placeholder="Type code-like text"
+            ></textarea>
+          </div>
+          <label for="codemirror-like">CodeMirror-like editor</label>
+          <div id="codemirror-like" class="cm-editor editor-shell" data-test-id="code-editor">
+            <div contenteditable="true" role="textbox" aria-multiline="true">
+              Type code-like text here.
+            </div>
+          </div>
         </article>
 
         <article class="card">
@@ -431,6 +481,20 @@
           ? 'Shadow input: tested'
           : 'Shadow input: not tested';
         document.getElementById('shadow-status').className = tested.has('shadow')
+          ? 'status ok'
+          : 'status';
+
+        document.getElementById('app-editor-status').textContent = tested.has('app-editor')
+          ? 'App editor: tested'
+          : 'App editor: not tested';
+        document.getElementById('app-editor-status').className = tested.has('app-editor')
+          ? 'status ok'
+          : 'status';
+
+        document.getElementById('code-editor-status').textContent = tested.has('code-editor')
+          ? 'Code editor: tested'
+          : 'Code editor: not tested';
+        document.getElementById('code-editor-status').className = tested.has('code-editor')
           ? 'status ok'
           : 'status';
       }
