@@ -14,6 +14,7 @@ delete config.chromeExtensionBoilerplate;
 config.mode = 'production';
 
 var packageInfo = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
+require('./validate-profiles')();
 
 config.plugins = (config.plugins || []).concat(
   new ZipPlugin({

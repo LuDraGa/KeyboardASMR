@@ -4,6 +4,30 @@ import { profileLoader } from '../utils/profileLoader';
 // This maintains backward compatibility while using the new profile system
 export let SOUND_SETS = {};
 
+export const SOUND_SET_ALIASES = {
+  soft: 'keychron_red',
+  medium: 'keychron_brown',
+  hard: 'keychron_blue',
+  drum: 'drum_kit',
+  pops: 'pop_sounds',
+  'apex-pro-tkl-v2': 'steelseries_apex_pro_tkl',
+  'banana-split': 'banana_split',
+  'gateron-black-ink': 'gateron_black_ink',
+  'gateron-red-ink': 'gateron_red_ink',
+  'holy-panda': 'holy_panda',
+  ios: 'ios_keyboard',
+  'mx-black': 'cherry_mx_black',
+  'mx-blue': 'cherry_mx_blue',
+  'mx-brown': 'cherry_mx_brown',
+  'mx-speed-silver': 'cherry_mx_speed_silver',
+  'nk-cream': 'novelkeys_cream',
+  'new-typewriter': 'modern_typewriter',
+  'opera-gx': 'opera_gx',
+  'telios-v2': 'gateron_telios_v2',
+};
+
+export const resolveSoundSetId = soundSet => SOUND_SET_ALIASES[soundSet] || soundSet;
+
 // Check if we're in a content script context (limited chrome API access)
 const isContentScript = () => {
   try {

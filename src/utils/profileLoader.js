@@ -1,5 +1,72 @@
 import yaml from 'js-yaml';
 
+export const BUNDLED_PROFILE_FILES = [
+  'typewriter.yaml',
+  'soft.yaml',
+  'medium.yaml',
+  'hard.yaml',
+  'drum.yaml',
+  'pops.yaml',
+  'alpaca.yaml',
+  'apex-pro-tkl-v2.yaml',
+  'banana-split.yaml',
+  'gateron-black-ink.yaml',
+  'gateron-red-ink.yaml',
+  'holy-panda.yaml',
+  'ios.yaml',
+  'mx-black.yaml',
+  'mx-blue.yaml',
+  'mx-brown.yaml',
+  'mx-speed-silver.yaml',
+  'nk-cream.yaml',
+  'opera-gx.yaml',
+  'telios-v2.yaml',
+  'new-typewriter.yaml',
+];
+
+export const BUNDLED_PROFILE_FILE_BY_ID = {
+  typewriter: 'typewriter.yaml',
+  keychron_red: 'soft.yaml',
+  soft: 'soft.yaml',
+  keychron_brown: 'medium.yaml',
+  medium: 'medium.yaml',
+  keychron_blue: 'hard.yaml',
+  hard: 'hard.yaml',
+  drum_kit: 'drum.yaml',
+  drum: 'drum.yaml',
+  pop_sounds: 'pops.yaml',
+  pops: 'pops.yaml',
+  alpaca: 'alpaca.yaml',
+  steelseries_apex_pro_tkl: 'apex-pro-tkl-v2.yaml',
+  'apex-pro-tkl-v2': 'apex-pro-tkl-v2.yaml',
+  banana_split: 'banana-split.yaml',
+  'banana-split': 'banana-split.yaml',
+  gateron_black_ink: 'gateron-black-ink.yaml',
+  'gateron-black-ink': 'gateron-black-ink.yaml',
+  gateron_red_ink: 'gateron-red-ink.yaml',
+  'gateron-red-ink': 'gateron-red-ink.yaml',
+  holy_panda: 'holy-panda.yaml',
+  'holy-panda': 'holy-panda.yaml',
+  ios_keyboard: 'ios.yaml',
+  ios: 'ios.yaml',
+  cherry_mx_black: 'mx-black.yaml',
+  'mx-black': 'mx-black.yaml',
+  cherry_mx_blue: 'mx-blue.yaml',
+  'mx-blue': 'mx-blue.yaml',
+  cherry_mx_brown: 'mx-brown.yaml',
+  'mx-brown': 'mx-brown.yaml',
+  cherry_mx_speed_silver: 'mx-speed-silver.yaml',
+  'mx-speed-silver': 'mx-speed-silver.yaml',
+  novelkeys_cream: 'nk-cream.yaml',
+  'nk-cream': 'nk-cream.yaml',
+  opera_gx: 'opera-gx.yaml',
+  'opera-gx': 'opera-gx.yaml',
+  gateron_telios_v2: 'telios-v2.yaml',
+  'telios-v2': 'telios-v2.yaml',
+  modern_typewriter: 'new-typewriter.yaml',
+  'new-typewriter': 'new-typewriter.yaml',
+};
+
 /**
  * Profile Loader - Handles loading and validation of YAML sound profiles
  * Supports multiple audio source types: bundled, url, storage
@@ -17,32 +84,7 @@ class ProfileLoader {
   async loadBundledProfiles() {
     const profiles = [];
 
-    // Define bundled profile files
-    const bundledProfileFiles = [
-      'typewriter.yaml',
-      'soft.yaml',
-      'medium.yaml',
-      'hard.yaml',
-      'drum.yaml',
-      'pops.yaml',
-      'alpaca.yaml',
-      'apex-pro-tkl-v2.yaml',
-      'banana-split.yaml',
-      'gateron-black-ink.yaml',
-      'gateron-red-ink.yaml',
-      'holy-panda.yaml',
-      'ios.yaml',
-      'mx-black.yaml',
-      'mx-blue.yaml',
-      'mx-brown.yaml',
-      'mx-speed-silver.yaml',
-      'nk-cream.yaml',
-      'opera-gx.yaml',
-      'telios-v2.yaml',
-      'new-typewriter.yaml',
-    ];
-
-    for (const filename of bundledProfileFiles) {
+    for (const filename of BUNDLED_PROFILE_FILES) {
       try {
         const profile = await this.loadProfile(`sound_profiles/${filename}`);
         if (profile) {
@@ -54,6 +96,18 @@ class ProfileLoader {
     }
 
     return profiles;
+  }
+
+  /**
+   * Load one bundled profile by generated id, legacy id, or profile file slug.
+   */
+  async loadBundledProfileById(profileId) {
+    const filename = BUNDLED_PROFILE_FILE_BY_ID[profileId];
+    if (!filename) {
+      throw new Error(`Unknown bundled profile id: ${profileId}`);
+    }
+
+    return await this.loadProfile(`sound_profiles/${filename}`);
   }
 
   /**
@@ -82,7 +136,9 @@ class ProfileLoader {
   /**
    * Validate profile structure and required fields
    */
-  async validateProfile(profileData) {
+  async validateProfile(profileData, options = {}) {
+    const { validateBundledFiles = false } = options;
+
     if (!profileData) {
       throw new Error('Profile data is empty');
     }
@@ -106,8 +162,11 @@ class ProfileLoader {
       ...profileData.ui,
     };
 
-    // Validate audio sources
-    await this.validateAudioSources(profileData.audio_sources);
+    // Validate source shape at runtime; full bundled file validation runs during build.
+    this.validateAudioSourceDefinitions(profileData.audio_sources);
+    if (validateBundledFiles) {
+      await this.validateAudioSources(profileData.audio_sources);
+    }
 
     // Validate key mappings reference valid audio sources
     this.validateKeyMappings(profileData.key_mappings, profileData.audio_sources);
@@ -125,14 +184,44 @@ class ProfileLoader {
   }
 
   /**
+   * Validate audio source schema without fetching bundled files.
+   */
+  validateAudioSourceDefinitions(audioSources) {
+    for (const [sourceId, sourceConfig] of Object.entries(audioSources)) {
+      if (!sourceConfig.type) {
+        throw new Error(`Audio source "${sourceId}" missing type`);
+      }
+
+      switch (sourceConfig.type) {
+        case 'bundled':
+          if (!sourceConfig.path) {
+            throw new Error(`Audio source "${sourceId}" missing path`);
+          }
+          break;
+        case 'url':
+          if (!sourceConfig.path) {
+            throw new Error(`Audio source "${sourceId}" missing path`);
+          }
+          this.validateUrlAudio(sourceConfig.path);
+          break;
+        case 'storage':
+          if (!sourceConfig.key) {
+            throw new Error(`Audio source "${sourceId}" missing storage key`);
+          }
+          break;
+        default:
+          throw new Error(`Unknown audio source type: ${sourceConfig.type}`);
+      }
+    }
+  }
+
+  /**
    * Validate that audio sources are accessible (new format only)
    */
   async validateAudioSources(audioSources) {
-    for (const [sourceId, sourceConfig] of Object.entries(audioSources)) {
-      if (!sourceConfig.type || !sourceConfig.path) {
-        throw new Error(`Audio source "${sourceId}" missing type or path`);
-      }
+    this.validateAudioSourceDefinitions(audioSources);
 
+    for (const sourceConfig of Object.values(audioSources)) {
       // Validate based on type
       switch (sourceConfig.type) {
         case 'bundled':
@@ -145,7 +234,8 @@ class ProfileLoader {
           // Will be validated at runtime when loading from storage
           break;
         default:
-          throw new Error(`Unknown audio source type: ${sourceConfig.type}`);
+          // validateAudioSourceDefinitions already rejects this.
+          break;
       }
     }
   }
@@ -168,7 +258,7 @@ class ProfileLoader {
   /**
    * Validate URL audio is accessible (with basic check)
    */
-  async validateUrlAudio(url) {
+  validateUrlAudio(url) {
     try {
       // Basic URL format validation
       new URL(url);
@@ -184,7 +274,9 @@ class ProfileLoader {
   validateKeyMappings(keyMappings, audioSources) {
     for (const [key, mapping] of Object.entries(keyMappings)) {
       if (typeof mapping !== 'object' || mapping === null) {
-        throw new Error(`Invalid mapping format for key "${key}" - must be object with event types`);
+        throw new Error(
+          `Invalid mapping format for key "${key}" - must be object with event types`
+        );
       }
 
       // Validate each event type

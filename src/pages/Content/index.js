@@ -1,15 +1,33 @@
-import { DEFAULT_SETTINGS, MESSAGE_TYPES, STORAGE_KEYS, getSoundSets } from '../../shared/config';
+import {
+  DEFAULT_SETTINGS,
+  MESSAGE_TYPES,
+  STORAGE_KEYS,
+  resolveSoundSetId,
+} from '../../shared/config';
+import { profileLoader } from '../../utils/profileLoader';
 
 // State management
 let isMuted = DEFAULT_SETTINGS.isMuted;
-let currentSoundSet = DEFAULT_SETTINGS.soundSet;
+let currentSoundSet = resolveSoundSetId(DEFAULT_SETTINGS.soundSet);
 let volume = DEFAULT_SETTINGS.volume;
 
 // Audio context and buffers
 let audioContext = null;
 const soundBuffers = {};
+const decodedAudioCache = new Map();
+const loadingProfiles = new Map();
 let isAudioInitialized = false;
+let audioInitPromise = null;
 let audioContextResumed = false;
+let activeSoundSet = null;
+let pendingSoundSet = null;
+let soundLoadToken = 0;
+
+let resolveInitialSettingsReady;
+const initialSettingsReady = new Promise(resolve => {
+  resolveInitialSettingsReady = resolve;
+});
+let initialSettingsLoaded = false;
 
 // Track whether injected script is active to prevent duplicate events
 let injectedScriptActive = false;
@@ -35,16 +53,19 @@ function recordError(code) {
 }
 
 function getContentStatus() {
-  const selectedProfile = soundBuffers[currentSoundSet];
-  const defaultMapping = selectedProfile?.default || {};
-  const selectedProfileLoaded = Object.values(defaultMapping).some(buffer => Boolean(buffer));
+  const selectedProfileLoaded = Boolean(soundBuffers[currentSoundSet]);
+  const activeProfileLoaded = Boolean(activeSoundSet && soundBuffers[activeSoundSet]);
 
   return {
     ok: true,
     muted: isMuted,
     volumePercent: Math.round(volume * 100),
     selectedProfile: currentSoundSet,
+    activeProfile: activeSoundSet,
+    pendingProfile: pendingSoundSet,
     selectedProfileLoaded,
+    activeProfileLoaded,
+    profileLoading: Boolean(pendingSoundSet || loadingProfiles.size),
     loadedProfileCount: Object.keys(soundBuffers).length,
     audioInitialized: isAudioInitialized,
     audioContextState: audioContext?.state || 'none',
@@ -63,17 +84,31 @@ function getContentStatus() {
 // Initialize Web Audio API (creates suspended context)
 async function initAudio() {
   if (isAudioInitialized) return;
+  if (audioInitPromise) return await audioInitPromise;
 
-  try {
-    // Create AudioContext in suspended state (allowed without user gesture)
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    await loadSounds();
-    isAudioInitialized = true;
-    console.log('Keyboard ASMR: Audio initialized successfully');
-  } catch (error) {
-    recordError('audio_init_failed');
-    console.error('Keyboard ASMR: Failed to initialize audio:', error);
-  }
+  audioInitPromise = (async () => {
+    try {
+      if (!initialSettingsLoaded) {
+        await initialSettingsReady;
+      }
+
+      // Create AudioContext in suspended state (allowed without user gesture)
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      isAudioInitialized = true;
+      await activateSoundSet(currentSoundSet);
+      console.log('Keyboard ASMR: Audio initialized successfully');
+    } catch (error) {
+      recordError('audio_init_failed');
+      if (!audioContext) {
+        isAudioInitialized = false;
+      }
+      console.error('Keyboard ASMR: Failed to initialize audio:', error);
+    } finally {
+      audioInitPromise = null;
+    }
+  })();
+
+  await audioInitPromise;
 }
 
 // Resume AudioContext on first user interaction
@@ -92,59 +127,125 @@ async function ensureAudioContextResumed() {
   }
 }
 
-// Load and cache sounds
-async function loadSounds() {
-  const loadSound = async url => {
-    try {
-      runtimeStats.loadAttemptCount += 1;
-      const response = await fetch(chrome.runtime.getURL(url));
-      const arrayBuffer = await response.arrayBuffer();
-      const decodedAudio = await audioContext.decodeAudioData(arrayBuffer);
-      runtimeStats.loadedSoundCount += 1;
-      return decodedAudio;
-    } catch (error) {
-      runtimeStats.failedSoundCount += 1;
-      recordError('sound_load_failed');
-      console.error(`Keyboard ASMR: Error loading sound: ${url}`, error);
-      return null;
-    }
-  };
+function resolveAudioRequestUrl(url) {
+  if (/^(https?:|data:|blob:)/.test(url)) {
+    return url;
+  }
+
+  return chrome.runtime.getURL(url);
+}
+
+async function loadSound(url) {
+  const requestUrl = resolveAudioRequestUrl(url);
+
+  if (decodedAudioCache.has(requestUrl)) {
+    return decodedAudioCache.get(requestUrl);
+  }
 
   try {
-    runtimeStats.loadedSoundCount = 0;
-    runtimeStats.failedSoundCount = 0;
-    runtimeStats.loadAttemptCount = 0;
+    runtimeStats.loadAttemptCount += 1;
+    const response = await fetch(requestUrl);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
 
-    // Get sound sets from profile loader (with fallback)
-    const SOUND_SETS = await getSoundSets();
+    const arrayBuffer = await response.arrayBuffer();
+    const decodedAudio = await audioContext.decodeAudioData(arrayBuffer);
+    decodedAudioCache.set(requestUrl, decodedAudio);
+    runtimeStats.loadedSoundCount += 1;
+    return decodedAudio;
+  } catch (error) {
+    runtimeStats.failedSoundCount += 1;
+    recordError('sound_load_failed');
+    console.error(`Keyboard ASMR: Error loading sound: ${url}`, error);
+    return null;
+  }
+}
 
-    // Load all sounds from configuration (new format only)
-    for (const [setName, keyMappings] of Object.entries(SOUND_SETS)) {
-      soundBuffers[setName] = {};
+async function buildProfileBuffers(soundSetId) {
+  const profile = await profileLoader.loadBundledProfileById(soundSetId);
+  if (!profile) {
+    throw new Error(`Profile not found: ${soundSetId}`);
+  }
 
-      for (const [key, eventMappings] of Object.entries(keyMappings)) {
-        soundBuffers[setName][key] = {};
+  const keyMappings = await profileLoader.profileToLegacyFormat(profile);
+  const profileBuffers = {};
+  let hasPlayableBuffer = false;
 
-        // Initialize all three event types
-        for (const eventType of ['keydown', 'keyup', 'keypress']) {
-          const path = eventMappings[eventType];
+  for (const [key, eventMappings] of Object.entries(keyMappings)) {
+    profileBuffers[key] = {};
 
-          if (path === null) {
-            // Explicitly disabled - no fallback
-            soundBuffers[setName][key][eventType] = null;
-          } else if (path) {
-            // Load sound
-            soundBuffers[setName][key][eventType] = await loadSound(path);
-          } else {
-            // Missing from config - will fall back to default at runtime
-            soundBuffers[setName][key][eventType] = undefined;
-          }
-        }
+    for (const eventType of ['keydown', 'keyup', 'keypress']) {
+      const path = eventMappings[eventType];
+
+      if (path === null) {
+        profileBuffers[key][eventType] = null;
+      } else if (path) {
+        const decodedAudio = await loadSound(path);
+        profileBuffers[key][eventType] = decodedAudio;
+        hasPlayableBuffer = hasPlayableBuffer || Boolean(decodedAudio);
+      } else {
+        profileBuffers[key][eventType] = undefined;
       }
     }
+  }
+
+  if (!hasPlayableBuffer) {
+    throw new Error(`Profile has no playable sounds: ${soundSetId}`);
+  }
+
+  return profileBuffers;
+}
+
+async function loadProfileBuffers(soundSetId) {
+  const resolvedSoundSet = resolveSoundSetId(soundSetId);
+
+  if (soundBuffers[resolvedSoundSet]) {
+    return soundBuffers[resolvedSoundSet];
+  }
+
+  if (loadingProfiles.has(resolvedSoundSet)) {
+    return await loadingProfiles.get(resolvedSoundSet);
+  }
+
+  const loadPromise = buildProfileBuffers(resolvedSoundSet)
+    .then(profileBuffers => {
+      soundBuffers[resolvedSoundSet] = profileBuffers;
+      return profileBuffers;
+    })
+    .finally(() => {
+      loadingProfiles.delete(resolvedSoundSet);
+    });
+
+  loadingProfiles.set(resolvedSoundSet, loadPromise);
+  return await loadPromise;
+}
+
+async function activateSoundSet(soundSetId) {
+  const resolvedSoundSet = resolveSoundSetId(soundSetId);
+  const token = ++soundLoadToken;
+  pendingSoundSet = resolvedSoundSet;
+
+  try {
+    await loadProfileBuffers(resolvedSoundSet);
+
+    if (token !== soundLoadToken) {
+      return false;
+    }
+
+    activeSoundSet = resolvedSoundSet;
+    pendingSoundSet = null;
+    console.log(`Keyboard ASMR: Activated sound profile ${resolvedSoundSet}`);
+    return true;
   } catch (error) {
-    recordError('sound_sets_failed');
-    console.error('Keyboard ASMR: Failed to load sound sets:', error);
+    recordError('profile_load_failed');
+
+    if (token === soundLoadToken) {
+      pendingSoundSet = null;
+    }
+
+    console.error(`Keyboard ASMR: Failed to activate profile ${resolvedSoundSet}:`, error);
+    return false;
   }
 }
 
@@ -155,12 +256,14 @@ async function playSound(key, eventType = 'keydown') {
   // Ensure AudioContext is resumed before playing
   await ensureAudioContextResumed();
 
+  const playbackSoundSet = activeSoundSet || currentSoundSet;
+
   // Try specific key + event type
-  let buffer = soundBuffers[currentSoundSet]?.[key]?.[eventType];
+  let buffer = soundBuffers[playbackSoundSet]?.[key]?.[eventType];
 
   // If undefined (not explicitly set), fall back to default
   if (buffer === undefined) {
-    buffer = soundBuffers[currentSoundSet]?.default?.[eventType];
+    buffer = soundBuffers[playbackSoundSet]?.default?.[eventType];
   }
 
   // If null (explicitly disabled) or still undefined, or no audioContext, return (no sound)
@@ -273,12 +376,16 @@ window.addEventListener('message', async event => {
 chrome.storage.sync.get(
   [STORAGE_KEYS.SOUND_SET, STORAGE_KEYS.VOLUME, STORAGE_KEYS.IS_MUTED],
   result => {
-    currentSoundSet = result[STORAGE_KEYS.SOUND_SET] || DEFAULT_SETTINGS.soundSet;
+    currentSoundSet = resolveSoundSetId(
+      result[STORAGE_KEYS.SOUND_SET] || DEFAULT_SETTINGS.soundSet
+    );
     volume =
       result[STORAGE_KEYS.VOLUME] !== undefined
         ? result[STORAGE_KEYS.VOLUME] / 100
         : DEFAULT_SETTINGS.volume;
     isMuted = result[STORAGE_KEYS.IS_MUTED] ?? DEFAULT_SETTINGS.isMuted;
+    initialSettingsLoaded = true;
+    resolveInitialSettingsReady();
   }
 );
 
@@ -286,10 +393,12 @@ chrome.storage.sync.get(
 chrome.storage.onChanged.addListener(async (changes, area) => {
   if (area === 'sync') {
     if (changes[STORAGE_KEYS.SOUND_SET]) {
-      currentSoundSet = changes[STORAGE_KEYS.SOUND_SET].newValue;
-      // Reload sounds if sound set changed
+      currentSoundSet = resolveSoundSetId(
+        changes[STORAGE_KEYS.SOUND_SET].newValue || DEFAULT_SETTINGS.soundSet
+      );
+
       if (isAudioInitialized) {
-        await loadSounds();
+        await activateSoundSet(currentSoundSet);
       }
     }
     if (changes[STORAGE_KEYS.VOLUME]) {

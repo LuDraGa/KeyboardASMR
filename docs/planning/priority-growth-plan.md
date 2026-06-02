@@ -12,17 +12,19 @@
 ## Phase 1: Review-Safe Reliability
 
 - [x] Remove runtime code paths that rely on undeclared or unnecessary Chrome APIs.
-- [x] Add a popup status panel that explains whether the current tab can run the extension.
-- [x] Add a one-click local diagnostic report with audio state, profile state, injection mode, and last error.
+- [x] Add hidden popup troubleshooting that explains whether the current tab can run the extension.
+- [x] Add a one-click local support report with audio state, profile state, injection mode, and last error.
+- [x] Show refresh guidance only when the popup cannot reach the current tab.
 - [x] Add install/update guidance: refresh existing tabs; unsupported on Chrome Web Store, chrome:// pages, and address bar.
 - [x] Add compatibility test pages for input, textarea, contenteditable, same-origin iframe, cross-origin iframe, and editor-like surfaces.
+- [ ] Add opt-in diagnostic report upload after a support endpoint and privacy disclosure are ready.
 
 ## Phase 2: Performance
 
-- [ ] Lazy-load only the selected sound profile in content scripts.
-- [ ] Move bundled profile/audio validation to build time.
-- [ ] Cache decoded audio buffers per profile and avoid reloading all profiles when one setting changes.
-- [ ] Debounce high-frequency storage writes from volume slider changes.
+- [x] Lazy-load only the selected sound profile in content scripts.
+- [x] Move bundled profile/audio validation to build time.
+- [x] Cache decoded audio buffers per profile and avoid reloading all profiles when one setting changes.
+- [x] Debounce high-frequency storage writes from volume slider changes.
 - [ ] Add lightweight runtime counters for injection fallback, audio init failure, decode failure, and first sound success.
 
 ## Phase 3: Privacy-Safe Analytics
@@ -63,4 +65,4 @@
 
 ## Current Next Step
 
-Next: start Phase 2 by lazy-loading only the selected sound profile in content scripts.
+Next: add first-sound success telemetry counters and harden the popup support report around profile/audio failures.

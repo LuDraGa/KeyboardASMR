@@ -130,8 +130,8 @@ body {
   background: #4752c4 !important;
 }
 
-/* Current Tab Status */
-.status-panel {
+/* Troubleshooting */
+.support-panel {
   padding: 0.75rem;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
@@ -143,27 +143,27 @@ body {
   box-sizing: border-box;
 }
 
-.status-panel.ready {
+.support-panel.ready {
   border-color: rgba(76, 175, 80, 0.45);
 }
 
-.status-panel.muted,
-.status-panel.attention {
+.support-panel.muted,
+.support-panel.attention {
   border-color: rgba(255, 193, 7, 0.5);
 }
 
-.status-panel.disconnected {
+.support-panel.disconnected {
   border-color: rgba(244, 67, 54, 0.45);
 }
 
-.status-header {
+.support-header {
   display: flex;
   justify-content: space-between;
   gap: 0.75rem;
   align-items: flex-start;
 }
 
-.status-header h2 {
+.support-header h2 {
   font-size: 0.78rem;
   font-weight: 700;
   opacity: 0.85;
@@ -171,18 +171,18 @@ body {
   letter-spacing: 0.05em;
 }
 
-.status-header p,
-.status-message {
+.support-header p,
+.support-message {
   font-size: 0.72rem;
   line-height: 1.25;
   opacity: 0.75;
 }
 
-.status-message {
+.support-message {
   margin-top: 0.35rem;
 }
 
-.status-pill {
+.support-pill {
   flex-shrink: 0;
   padding: 0.2rem 0.45rem;
   border-radius: 999px;
@@ -193,49 +193,14 @@ body {
   letter-spacing: 0.04em;
 }
 
-.status-metrics {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.35rem;
-  margin-top: 0.55rem;
-}
-
-.status-metric {
-  min-width: 0;
-  padding: 0.35rem;
-  border-radius: 0.45rem;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.status-metric-label,
-.status-metric-value {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.status-metric-label {
-  font-size: 0.55rem;
-  opacity: 0.55;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.status-metric-value {
-  margin-top: 0.15rem;
-  font-size: 0.65rem;
-  font-weight: 700;
-}
-
-.status-actions {
+.support-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.45rem;
   margin-top: 0.6rem;
 }
 
-.status-action-btn {
+.support-action-btn {
   height: 1.9rem;
   border: none;
   border-radius: 0.5rem;
@@ -247,7 +212,7 @@ body {
   transition: all 0.2s ease;
 }
 
-.status-action-btn:hover {
+.support-action-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
 }
@@ -261,7 +226,11 @@ body {
   box-sizing: border-box;
   min-height: 0;
   width: 100%;
-  max-height: 220px; /* Show profiles while leaving room for tab status */
+  max-height: 280px; /* Show ~6.5 profiles to hint at more content */
+}
+
+.popup-container.tab-help-open .sound-profiles {
+  max-height: 235px;
 }
 
 .sound-profiles h2 {
@@ -710,7 +679,7 @@ kbd {
 .popup-container.light .header,
 .popup-container.light .volume-section,
 .popup-container.light .stats-panel,
-.popup-container.light .status-panel {
+.popup-container.light .support-panel {
   background: rgba(0, 0, 0, 0.05);
   border-color: rgba(0, 0, 0, 0.1);
 }
@@ -727,13 +696,12 @@ kbd {
   background: rgba(0, 0, 0, 0.05);
 }
 
-.popup-container.light .status-pill,
-.popup-container.light .status-metric,
-.popup-container.light .status-action-btn {
+.popup-container.light .support-pill,
+.popup-container.light .support-action-btn {
   background: rgba(0, 0, 0, 0.06);
 }
 
-.popup-container.light .status-action-btn:hover {
+.popup-container.light .support-action-btn:hover {
   background: rgba(0, 0, 0, 0.1);
 }
 
