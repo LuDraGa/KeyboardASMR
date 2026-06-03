@@ -33,9 +33,10 @@
 - Decision gate: do this after the focused product work, using only free instrumentation paths unless approved.
 - [ ] Enable the Chrome Web Store Developer Dashboard GA opt-in for listing views and install events.
 - [ ] Confirm whether the dashboard-created GA4 property exposes a Measurement Protocol API secret for in-extension events.
-- [ ] Implement GA4 Measurement Protocol or a minimal first-party endpoint with an anonymous client id in `chrome.storage.local` only if needed.
-- [ ] Track install/update, popup open, profile select, preview play, mute toggle, volume bucket, status result, diagnostic copy, and first sound success.
-- [ ] Track error classes only, not typed keys, typed text, raw page URLs, or browsing history.
+- [x] Implement config-gated GA4 Measurement Protocol with an anonymous client id in `chrome.storage.local`.
+- [x] Aggregate profile changes and per-profile usage counts locally, then flush at most once per day.
+- [x] Track install/update, popup open, profile select, preview play, mute toggle, volume bucket, status result, diagnostic copy, and first sound success.
+- [x] Track error classes only, not typed keys, typed text, raw page URLs, or browsing history.
 - [ ] Add a privacy note in popup/settings before enabling diagnostic upload or analytics.
 - [ ] Create GA dashboards for activation, profile demand, reliability failure rate, retention, and conversion intent.
 
@@ -67,4 +68,4 @@
 
 ## Current Next Step
 
-Next: decide whether to implement privacy-safe in-extension analytics or continue product upgrades first.
+Next: add the privacy note and provide GA4 Measurement Protocol credentials for release builds if analytics should go live.

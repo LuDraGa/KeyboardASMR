@@ -35,6 +35,8 @@ let initialSettingsLoaded = false;
 let injectedScriptActive = false;
 let fallbackListenersEnabled = false;
 const FALLBACK_TIMEOUT = 500; // Enable fallback if no heartbeat after 500ms
+const ANALYTICS_USAGE_CHECKPOINT_KEY_THRESHOLD = 1000;
+const ANALYTICS_USAGE_CHECKPOINT_INTERVAL = 15 * 60 * 1000;
 
 const runtimeStats = {
   contentScriptStartedAt: new Date().toISOString(),
@@ -66,6 +68,10 @@ const runtimeStats = {
   errorCounts: {},
 };
 
+const pendingAnalyticsUsage = {};
+let pendingAnalyticsKeyEvents = 0;
+let analyticsFlushTimer = null;
+
 function recordError(code, context = null) {
   runtimeStats.errorCounts[code] = (runtimeStats.errorCounts[code] || 0) + 1;
   runtimeStats.lastErrorCode = code;
@@ -87,8 +93,99 @@ function recordKeyEvent(keyCategory = 'unknown') {
   }
 }
 
+function getUsageProfileId() {
+  return activeSoundSet || currentSoundSet || 'unknown';
+}
+
+function getPendingProfileUsage(profileId = getUsageProfileId()) {
+  pendingAnalyticsUsage[profileId] ||= {
+    keyEventCount: 0,
+    playedSoundCount: 0,
+    droppedSoundCount: 0,
+    firstSoundSuccessCount: 0,
+  };
+  return pendingAnalyticsUsage[profileId];
+}
+
+function queueAnalyticsUsageFlush() {
+  if (analyticsFlushTimer) return;
+
+  analyticsFlushTimer = setTimeout(() => {
+    flushAnalyticsUsage();
+  }, ANALYTICS_USAGE_CHECKPOINT_INTERVAL);
+}
+
+function recordAnalyticsUsageDelta(delta) {
+  const usage = getPendingProfileUsage();
+  usage.keyEventCount += delta.keyEventCount || 0;
+  usage.playedSoundCount += delta.playedSoundCount || 0;
+  usage.droppedSoundCount += delta.droppedSoundCount || 0;
+  usage.firstSoundSuccessCount += delta.firstSoundSuccessCount || 0;
+
+  pendingAnalyticsKeyEvents += delta.keyEventCount || 0;
+
+  if (pendingAnalyticsKeyEvents >= ANALYTICS_USAGE_CHECKPOINT_KEY_THRESHOLD) {
+    flushAnalyticsUsage();
+  } else {
+    queueAnalyticsUsageFlush();
+  }
+}
+
+function restoreAnalyticsUsage(profileDeltas) {
+  for (const [profileId, delta] of Object.entries(profileDeltas)) {
+    pendingAnalyticsUsage[profileId] ||= {
+      keyEventCount: 0,
+      playedSoundCount: 0,
+      droppedSoundCount: 0,
+      firstSoundSuccessCount: 0,
+    };
+    pendingAnalyticsUsage[profileId].keyEventCount += delta.keyEventCount || 0;
+    pendingAnalyticsUsage[profileId].playedSoundCount += delta.playedSoundCount || 0;
+    pendingAnalyticsUsage[profileId].droppedSoundCount += delta.droppedSoundCount || 0;
+    pendingAnalyticsUsage[profileId].firstSoundSuccessCount += delta.firstSoundSuccessCount || 0;
+    pendingAnalyticsKeyEvents += delta.keyEventCount || 0;
+  }
+}
+
+function flushAnalyticsUsage() {
+  if (analyticsFlushTimer) {
+    clearTimeout(analyticsFlushTimer);
+    analyticsFlushTimer = null;
+  }
+
+  if (Object.keys(pendingAnalyticsUsage).length === 0) {
+    return;
+  }
+
+  const profileDeltas = {};
+  for (const [profileId, delta] of Object.entries(pendingAnalyticsUsage)) {
+    profileDeltas[profileId] = { ...delta };
+    delete pendingAnalyticsUsage[profileId];
+  }
+  pendingAnalyticsKeyEvents = 0;
+
+  try {
+    chrome.runtime.sendMessage(
+      {
+        type: MESSAGE_TYPES.ANALYTICS_PROFILE_USAGE_DELTA,
+        profileDeltas,
+      },
+      () => {
+        if (chrome.runtime.lastError) {
+          restoreAnalyticsUsage(profileDeltas);
+          queueAnalyticsUsageFlush();
+        }
+      }
+    );
+  } catch (error) {
+    restoreAnalyticsUsage(profileDeltas);
+    queueAnalyticsUsageFlush();
+  }
+}
+
 function recordDroppedSound(reason) {
   runtimeStats.droppedSoundCount += 1;
+  recordAnalyticsUsageDelta({ droppedSoundCount: 1 });
 
   if (!runtimeStats.firstSoundAt) {
     runtimeStats.droppedBeforeFirstSoundCount += 1;
@@ -106,6 +203,7 @@ function recordPlayedSound() {
   if (!runtimeStats.firstSoundAt) {
     runtimeStats.firstSoundAt = timestamp;
     runtimeStats.firstSoundSuccessCount += 1;
+    recordAnalyticsUsageDelta({ firstSoundSuccessCount: 1 });
     runtimeStats.firstSoundLatencyMs = runtimeStats.firstEventAt
       ? now - Date.parse(runtimeStats.firstEventAt)
       : null;
@@ -373,6 +471,7 @@ async function playSound(playbackInfo, eventType = 'keydown') {
     gainNode.connect(audioContext.destination);
 
     source.start(0);
+    recordAnalyticsUsageDelta({ playedSoundCount: 1 });
     recordPlayedSound();
   } catch (error) {
     runtimeStats.soundPlayFailureCount += 1;
@@ -457,6 +556,9 @@ window.addEventListener('message', async event => {
         ? { playbackKey, keyCategory, location }
         : getKeyPlaybackInfo(keyEventData);
       recordKeyEvent(playbackInfo.keyCategory);
+      if (!isMuted) {
+        recordAnalyticsUsageDelta({ keyEventCount: 1 });
+      }
 
       // Initialize audio on first keypress if needed
       if (!isAudioInitialized) {
@@ -527,6 +629,7 @@ async function handleFallbackKeydown(event) {
 
   const playbackInfo = getKeyPlaybackInfo(event);
   recordKeyEvent(playbackInfo.keyCategory);
+  recordAnalyticsUsageDelta({ keyEventCount: 1 });
 
   // Initialize audio on first keypress if needed
   if (!isAudioInitialized) {
@@ -543,6 +646,7 @@ async function handleFallbackKeyup(event) {
 
   const playbackInfo = getKeyPlaybackInfo(event);
   recordKeyEvent(playbackInfo.keyCategory);
+  recordAnalyticsUsageDelta({ keyEventCount: 1 });
 
   // Initialize audio if needed
   if (!isAudioInitialized) {
@@ -570,6 +674,14 @@ setTimeout(() => {
     enableFallbackListeners();
   }
 }, FALLBACK_TIMEOUT);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    flushAnalyticsUsage();
+  }
+});
+
+window.addEventListener('pagehide', flushAnalyticsUsage);
 
 // Try to inject script early
 if (document.documentElement) {

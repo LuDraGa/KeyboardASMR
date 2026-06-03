@@ -209,6 +209,8 @@ export const MESSAGE_TYPES = {
   TOGGLE_MUTE: 'TOGGLE_MUTE',
   STATE_CHANGE: 'STATE_CHANGE',
   GET_STATUS: 'GET_STATUS',
+  ANALYTICS_EVENT: 'ANALYTICS_EVENT',
+  ANALYTICS_PROFILE_USAGE_DELTA: 'ANALYTICS_PROFILE_USAGE_DELTA',
 };
 
 // Storage keys
@@ -217,4 +219,10 @@ export const STORAGE_KEYS = {
   VOLUME: 'volume',
   IS_MUTED: 'isMuted',
   THEME: 'theme',
+};
+
+export const ANALYTICS_STORAGE_KEYS = {
+  CLIENT_ID: 'analyticsClientId',
+  DAILY_STATE: 'analyticsDailyState',
+  LAST_FLUSH_DATE: 'analyticsLastFlushDate',
 };

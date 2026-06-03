@@ -185,6 +185,18 @@ const getDiagnosticHints = tabStatus => {
   return hints;
 };
 
+const recordAnalyticsEvent = (eventName, params = {}) => {
+  try {
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.ANALYTICS_EVENT,
+      eventName,
+      params,
+    });
+  } catch (error) {
+    // Analytics is best-effort and must never affect popup behavior.
+  }
+};
+
 const Popup = () => {
   const [soundSet, setSoundSet] = useState(DEFAULT_SETTINGS.soundSet);
   const [volume, setVolume] = useState(DEFAULT_SETTINGS.volume * 100);
@@ -232,6 +244,11 @@ const Popup = () => {
 
     if (!chrome.tabs?.query) {
       setTabStatus(createDisconnectedStatus('tabs_api_unavailable', { tabsApiAvailable: false }));
+      recordAnalyticsEvent('status_result', {
+        statusState: 'disconnected',
+        reason: 'tabs_api_unavailable',
+        captureMode: 'none',
+      });
       return;
     }
 
@@ -242,12 +259,22 @@ const Popup = () => {
             lastErrorMessage: chrome.runtime.lastError.message,
           })
         );
+        recordAnalyticsEvent('status_result', {
+          statusState: 'disconnected',
+          reason: 'active_tab_query_failed',
+          captureMode: 'none',
+        });
         return;
       }
 
       const activeTab = tabs?.[0];
       if (!activeTab?.id) {
         setTabStatus(createDisconnectedStatus('active_tab_missing', getTabContext(activeTab)));
+        recordAnalyticsEvent('status_result', {
+          statusState: 'disconnected',
+          reason: 'active_tab_missing',
+          captureMode: 'none',
+        });
         return;
       }
 
@@ -259,10 +286,24 @@ const Popup = () => {
               lastErrorMessage: chrome.runtime.lastError?.message || 'no_status_response',
             })
           );
+          recordAnalyticsEvent('status_result', {
+            statusState: 'disconnected',
+            reason: 'content_script_unavailable',
+            captureMode: 'none',
+          });
           return;
         }
 
-        setTabStatus(getStatusFromReport(response));
+        const status = getStatusFromReport(response);
+        setTabStatus(status);
+        recordAnalyticsEvent('status_result', {
+          statusState: status.state,
+          reason: response.stats?.lastErrorCode || 'none',
+          captureMode: response.captureMode || 'unknown',
+          compatibilityModes: response.compatibilityModes || [],
+          errorClass: response.stats?.lastErrorCode || null,
+          firstSoundLatencyMs: response.stats?.firstSoundLatencyMs ?? null,
+        });
       });
     });
   }, []);
@@ -374,6 +415,7 @@ const Popup = () => {
     };
 
     initialize();
+    recordAnalyticsEvent('popup_open');
     requestTabStatus();
   }, [requestTabStatus]);
 
@@ -385,6 +427,7 @@ const Popup = () => {
 
       if (pendingVolumeRef.current !== null) {
         chrome.storage.sync.set({ [STORAGE_KEYS.VOLUME]: pendingVolumeRef.current });
+        recordAnalyticsEvent('volume_changed', { volumePercent: pendingVolumeRef.current });
       }
     };
   }, []);
@@ -396,11 +439,14 @@ const Popup = () => {
     // Play preview sound first
     if (selectedProfile) {
       await playPreview(selectedProfile);
+      recordAnalyticsEvent('profile_previewed', { profileId });
     }
 
     // Then update the setting
+    const previousProfileId = soundSet;
     setSoundSet(profileId);
     chrome.storage.sync.set({ [STORAGE_KEYS.SOUND_SET]: profileId });
+    recordAnalyticsEvent('profile_selected', { profileId, previousProfileId });
     setTimeout(requestTabStatus, 200);
   };
 
@@ -415,6 +461,7 @@ const Popup = () => {
 
     volumeWriteTimerRef.current = setTimeout(() => {
       chrome.storage.sync.set({ [STORAGE_KEYS.VOLUME]: newVolume });
+      recordAnalyticsEvent('volume_changed', { volumePercent: newVolume });
       pendingVolumeRef.current = null;
       volumeWriteTimerRef.current = null;
     }, VOLUME_WRITE_DELAY);
@@ -428,6 +475,7 @@ const Popup = () => {
 
     if (pendingVolumeRef.current !== null) {
       chrome.storage.sync.set({ [STORAGE_KEYS.VOLUME]: pendingVolumeRef.current });
+      recordAnalyticsEvent('volume_changed', { volumePercent: pendingVolumeRef.current });
       pendingVolumeRef.current = null;
     }
   };
@@ -440,6 +488,7 @@ const Popup = () => {
       type: MESSAGE_TYPES.TOGGLE_MUTE,
       isMuted: muteState,
     });
+    recordAnalyticsEvent('mute_toggled', { muted: muteState });
     setTimeout(requestTabStatus, 100);
   };
 
@@ -518,6 +567,7 @@ ${JSON.stringify(
       }
 
       setCopyState('copied');
+      recordAnalyticsEvent('diagnostic_copied');
       setTimeout(() => setCopyState('idle'), STATUS_COPY_RESET_DELAY);
     } catch (error) {
       console.error('Failed to copy diagnostic report:', error);
