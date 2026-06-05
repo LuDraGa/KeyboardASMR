@@ -22,8 +22,6 @@ In the Developer Dashboard, open the item and update Privacy practices before up
 Recommended disclosed data categories:
 
 - User activity: aggregate extension interactions, profile selection counts, popup/status events, daily per-profile key event counts, and support-report actions.
-- Device or other IDs: anonymous analytics client id stored in `chrome.storage.local` when GA4 Measurement Protocol is configured.
-- Diagnostics or device information: user agent, platform, language, extension version, audio/profile status, error codes, compatibility mode, and timing buckets when the user opts into diagnostic sharing.
 
 Recommended non-collection notes:
 
@@ -34,25 +32,43 @@ Recommended non-collection notes:
 - No website content.
 - No account, payment, location, health, or authentication data.
 
-## Privacy Policy Draft
+## Exact Dashboard Copy
 
-Use this as the starting copy for the privacy policy page linked from Chrome Web Store.
+`docs/release/chrome-web-store-listing.yaml` is the single source of truth for every dashboard field (product details, graphics, privacy practices, distribution). Any change to live dashboard text must be mirrored there.
 
-```text
-Keyboard ASMR plays local keyboard sound effects in your browser.
+The privacy-practices subset that must match exactly:
 
-The extension does not collect typed text, raw key values, passwords, form contents, website content, raw page URLs, browsing history, location, payment information, health information, authentication information, or personal communications.
+- Single purpose description → `privacy.single_purpose_description`
+- Storage permission justification → `privacy.permissions.storage.justification`
+- Host permissions justification → `privacy.permissions.host_permissions.justification`
+- Remote code selection → `privacy.remote_code.selected_option`
+- Data usage checkboxes → `privacy.data_usage.planned_user_data_collection`
+- Certifications → `privacy.certifications`
 
-If analytics is enabled, Keyboard ASMR collects privacy-safe aggregate usage data to understand reliability and product usage. This may include extension install/update events, popup opens, selected sound profile, profile preview/selection counts, daily per-profile key event counts, sound playback counts, error classes, compatibility modes, volume buckets, first-sound latency buckets, and diagnostic/report actions. Key event analytics are counts only; the extension does not send which keys were pressed or what was typed.
+## Privacy Policy Phrase Guard
 
-If diagnostic sharing is enabled, Keyboard ASMR can send a support report only after the user opts in or manually shares it from the popup. Diagnostic reports may include extension version, user agent, platform, language, selected sound profile, mute/volume settings, local audio/profile status, compatibility mode, error codes, timing buckets, and category-level key counters. Diagnostic reports exclude typed text, raw key values, raw URLs, browsing history, and website content.
+The hosted policy at `docs/release/privacy-policy.md` must contain each of these phrases verbatim. Removing any of them is a release blocker.
 
-Data is used only to improve Keyboard ASMR reliability, understand aggregate profile demand, and support users who report issues. Data is not sold and is not used for personalized, retargeted, or interest-based advertising.
+- "Keyboard ASMR does not collect typed text, raw key values, passwords, form contents, website content, raw page URLs, browsing history, location, payment information, health information, authentication information, or personal communications."
+- "Key event analytics are counts only. Keyboard ASMR does not send which keys were pressed or what was typed."
+- "Diagnostic reports exclude typed text, raw key values, raw page URLs, browsing history, and website content."
+- "Keyboard ASMR does not sell user data."
+- "Keyboard ASMR's use and transfer of user data complies with the Chrome Web Store User Data Policy, including the Limited Use requirements."
 
-Analytics data is processed by Google Analytics through the developer-controlled Cloudflare Worker proxy if configured. Diagnostic reports are sent only to the developer-controlled support endpoint if configured. All remote analytics and diagnostic endpoints must use HTTPS.
+## Privacy Policy
 
-Users can disable diagnostic sharing from the extension popup. Removing the extension clears extension-local storage according to Chrome's extension storage behavior.
-```
+Use `docs/release/privacy-policy.md` as the hosted privacy policy source.
+
+Public Gist: https://gist.github.com/LuDraGa/c009fdd373468d5fb5e08a18b821d45f
+Gist ID: `c009fdd373468d5fb5e08a18b821d45f`
+
+The GitHub Actions workflow `.github/workflows/sync-privacy-policy-gist.yml` syncs that file to the Gist on pushes to `main` after these repository settings are configured:
+
+- Repository variable: `PRIVACY_POLICY_GIST_ID` = `c009fdd373468d5fb5e08a18b821d45f`
+- Repository secret: `PRIVACY_POLICY_GIST_TOKEN` = fine-grained or classic GitHub PAT with `gist` scope only
+- Optional repository variable: `PRIVACY_POLICY_GIST_FILENAME` (defaults to `keyboard-asmr-privacy-policy.md`)
+
+Paste the public Gist URL into the Chrome Web Store Privacy policy URL field.
 
 ## Release Gate
 

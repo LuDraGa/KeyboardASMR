@@ -1,4 +1,10 @@
 chrome_web_store_listing:
+  release:
+    current_version: "6.1.4"
+    previous_version: "6.1.3"
+    previous_version_includes_through_commit: "729729c4816d2be5edbbbc047b1f3abdc60360c1"
+    note: "Everything after the previous-version commit is treated as part of 6.1.4."
+
   product_details:
     language: "English"
 
@@ -44,12 +50,19 @@ chrome_web_store_listing:
       Join our Discord to share feedback, suggest new sound packs, vote on upcoming typing sound profiles, report issues, and preview builds.
       👉 https://discord.gg/2jcP6RBTPq
 
+      6.1.4 Changelog
+      - Improved Google Docs and iframe keyboard capture reliability
+      - Added key-category compatibility for editors and complex pages
+      - Added opt-in diagnostic reports and privacy-safe aggregate analytics support
+      - Added regression tests for sound profiles, Google Docs capture, key categories, and bundled profile loading
+      - Improved profile loading reliability and removed the popup inactive notice
+
+      6.1.1 Changelog
+      - FIX: double-sound issue resolved for certain browsers
+      
       6.1.0 Changelog
       - Key events added (Key down, Key up, Key pressed)
       - Only Key down events kept active
-
-      6.1.1 Changelog
-      FIX: double-sound issue resolved for certain browsers
 
     category: "Just for Fun"
 
@@ -105,17 +118,17 @@ chrome_web_store_listing:
       visible_actions:
         - "Opt out of Google Analytics"
         - "Go to Google Analytics"
-      note: "GA4 is connected/enabled in the listing UI; exact property/measurement ID is not visible in screenshot."
+      note: "GA4 is connected/enabled in the listing UI; exact property/measurement ID is not visible in screenshot. This is separate from in-extension GA4 Measurement Protocol support, which must be disclosed in Privacy practices when GA4_PROXY_ENDPOINT is configured."
 
   privacy:
     single_purpose_description: "An extension for serving your keyboard ASMR needs"
 
     permissions:
       storage:
-        justification: "To work with multiple sound files and user preference store"
+        justification: "Stores selected sound profile, mute/volume/theme settings, diagnostics opt-in, and anonymous analytics state when analytics is configured."
 
       host_permissions:
-        justification: "Just active tab nothing else"
+        justification: "Required for the content script to detect keyboard events and play sounds on pages and frames where the user types. The extension does not read typed text or transmit page content."
         review_warning_visible: true
         review_warning: "Due to the Host Permission, your extension may require an in-depth review which will delay publishing."
 
@@ -125,6 +138,10 @@ chrome_web_store_listing:
       justification: null
 
     data_usage:
+      collection_enabled_when_release_build_has_endpoints:
+        - "GA4_PROXY_ENDPOINT"
+        - "DIAGNOSTIC_REPORT_ENDPOINT"
+
       planned_user_data_collection:
         personally_identifiable_information: false
         health_information: false
@@ -133,8 +150,14 @@ chrome_web_store_listing:
         personal_communications: false
         location: false
         web_history: false
-        user_activity: false
+        user_activity: true
         website_content: false
+
+      disclosure_notes:
+        - "User activity is limited to aggregate extension interactions, selected profile usage, status events, playback/error counts, and daily per-profile key event counts."
+        - "Device or other IDs are limited to an anonymous analytics client ID stored in chrome.storage.local when GA4 Measurement Protocol is configured."
+        - "Diagnostic reports are opt-in and may include user agent, platform, language, extension version, selected profile, mute/volume settings, local audio/profile status, compatibility mode, error codes, timing buckets, and category-level key counters."
+        - "The extension does not collect typed text, raw key values, passwords, form contents, raw URLs, browsing history, website content, location, payment information, health information, authentication information, or personal communications."
 
     certifications:
       does_not_sell_or_transfer_user_data_to_third_parties_outside_approved_use_cases: true
@@ -143,8 +166,18 @@ chrome_web_store_listing:
 
     privacy_policy:
       required: true
-      url: null
-      status: "missing"
+      url: "https://gist.github.com/LuDraGa/c009fdd373468d5fb5e08a18b821d45f"
+      gist_id: "c009fdd373468d5fb5e08a18b821d45f"
+      raw_url: "https://gist.githubusercontent.com/LuDraGa/c009fdd373468d5fb5e08a18b821d45f/raw/keyboard-asmr-privacy-policy.md"
+      source_file: "docs/release/privacy-policy.md"
+      gist_workflow: ".github/workflows/sync-privacy-policy-gist.yml"
+      gist_id_variable: "PRIVACY_POLICY_GIST_ID"
+      gist_token_secret: "PRIVACY_POLICY_GIST_TOKEN"
+      gist_filename_variable: "PRIVACY_POLICY_GIST_FILENAME"
+      default_gist_filename: "keyboard-asmr-privacy-policy.md"
+      release_checklist: "docs/release/chrome-web-store-privacy.md"
+      status: "ready"
+      note: "Required before shipping a release build with GA4_PROXY_ENDPOINT or DIAGNOSTIC_REPORT_ENDPOINT configured."
 
   distribution:
     payments:

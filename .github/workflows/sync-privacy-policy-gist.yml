@@ -1,0 +1,95 @@
+name: Sync privacy policy Gist
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - docs/release/privacy-policy.md
+      - .github/workflows/sync-privacy-policy-gist.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      PRIVACY_POLICY_FILE: docs/release/privacy-policy.md
+      GIST_ID: ${{ vars.PRIVACY_POLICY_GIST_ID }}
+      GIST_FILENAME: ${{ vars.PRIVACY_POLICY_GIST_FILENAME || 'keyboard-asmr-privacy-policy.md' }}
+      GIST_TOKEN: ${{ secrets.PRIVACY_POLICY_GIST_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Sync privacy policy to Gist
+        shell: bash
+        run: |
+          if [[ -z "$GIST_ID" || -z "$GIST_TOKEN" ]]; then
+            echo "::notice::Skipping privacy policy Gist sync. Set repository variable PRIVACY_POLICY_GIST_ID and secret PRIVACY_POLICY_GIST_TOKEN to enable it."
+            exit 0
+          fi
+
+          node <<'NODE'
+          const fs = require('fs');
+          const https = require('https');
+
+          const policyPath = process.env.PRIVACY_POLICY_FILE;
+          const gistId = process.env.GIST_ID;
+          const filename = process.env.GIST_FILENAME;
+          const token = process.env.GIST_TOKEN;
+
+          if (!fs.existsSync(policyPath)) {
+            throw new Error(`Privacy policy file not found: ${policyPath}`);
+          }
+
+          const content = fs.readFileSync(policyPath, 'utf8');
+          const payload = JSON.stringify({
+            files: {
+              [filename]: {
+                content,
+              },
+            },
+          });
+
+          const request = https.request(
+            {
+              hostname: 'api.github.com',
+              path: `/gists/${gistId}`,
+              method: 'PATCH',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payload),
+                'User-Agent': 'keyboard-asmr-privacy-policy-sync',
+                'X-GitHub-Api-Version': '2022-11-28',
+              },
+            },
+            response => {
+              let body = '';
+
+              response.on('data', chunk => {
+                body += chunk;
+              });
+
+              response.on('end', () => {
+                if (response.statusCode < 200 || response.statusCode >= 300) {
+                  console.error(body);
+                  throw new Error(`Gist update failed with HTTP ${response.statusCode}`);
+                }
+
+                const gist = JSON.parse(body);
+                console.log(`Updated ${filename} in ${gist.html_url}`);
+              });
+            }
+          );
+
+          request.on('error', error => {
+            throw error;
+          });
+
+          request.write(payload);
+          request.end();
+          NODE
