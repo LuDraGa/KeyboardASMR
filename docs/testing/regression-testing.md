@@ -8,7 +8,13 @@ Run the regression suite directly with:
 npm run test:regression
 ```
 
-`npm run build` also runs it automatically through the `prebuild` npm lifecycle hook. The suite is intentionally lightweight and dependency-free so it can run before Webpack packaging.
+`npm run build` also runs it automatically through the `prebuild` npm lifecycle hook. The suite uses Vitest with the verbose reporter so pre-build output shows named suites and individual passing or failing test cases.
+
+Current pre-build suites:
+
+- `tests/regression/googleDocsCapture.test.js` protects the Google Docs capture contract.
+- `tests/regression/soundProfiles.test.js` validates bundled sound profiles and referenced audio files.
+- `tests/shared/keyCategories.test.js` covers key categorization and playback fallback order.
 
 ## Google Docs silent typing bug
 
