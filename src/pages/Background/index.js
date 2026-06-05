@@ -223,6 +223,11 @@ async function getOrCreateAnalyticsClientId() {
   return clientId;
 }
 
+function getAnalyticsProxyUrl() {
+  const proxyEndpoint = ANALYTICS_CONFIG.proxyEndpoint.replace(/\/+$/, '');
+  return proxyEndpoint.endsWith('/ga4') ? proxyEndpoint : `${proxyEndpoint}/ga4`;
+}
+
 function buildAnalyticsEventsForDate(dateKey, bucket) {
   const events = [];
   const normalizedBucket = normalizeDailyBucket(bucket);
@@ -391,13 +396,14 @@ async function sendAnalyticsEvents(events) {
   }
 
   const clientId = await getOrCreateAnalyticsClientId();
-  const endpoint = `${ANALYTICS_CONFIG.endpoint}?measurement_id=${encodeURIComponent(
-    ANALYTICS_CONFIG.measurementId
-  )}&api_secret=${encodeURIComponent(ANALYTICS_CONFIG.apiSecret)}`;
+  const endpoint = getAnalyticsProxyUrl();
 
   for (let index = 0; index < events.length; index += 25) {
     const response = await fetch(endpoint, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
         client_id: clientId,
         events: events.slice(index, index + 25),
@@ -405,7 +411,7 @@ async function sendAnalyticsEvents(events) {
     });
 
     if (!response.ok) {
-      throw new Error(`GA4 Measurement Protocol failed: HTTP ${response.status}`);
+      throw new Error(`GA4 proxy failed: HTTP ${response.status}`);
     }
   }
 

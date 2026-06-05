@@ -120,8 +120,7 @@ var options = {
     // expose and write the allowed env vars on the compiled bundle
     new webpack.EnvironmentPlugin({
       NODE_ENV: process.env.NODE_ENV || 'development',
-      GA4_MEASUREMENT_ID: '',
-      GA4_API_SECRET: '',
+      GA4_PROXY_ENDPOINT: '',
       DIAGNOSTIC_REPORT_ENDPOINT: '',
     }),
     new CopyWebpackPlugin({

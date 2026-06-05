@@ -1,4 +1,5 @@
 {
+  "ignorePatterns": ["worker/**"],
   "extends": ["react-app", "prettier"],
   "parser": "@babel/eslint-parser",
   "parserOptions": {

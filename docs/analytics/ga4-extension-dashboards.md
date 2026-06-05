@@ -1,21 +1,27 @@
 # GA4 Dashboards For Keyboard ASMR
 
-This extension does not use page tags. It sends daily aggregate events from the MV3 service worker through GA4 Measurement Protocol only when `GA4_MEASUREMENT_ID` and `GA4_API_SECRET` are configured.
+This extension does not use page tags. It sends daily aggregate events from the MV3 service worker to the Cloudflare Worker GA4 proxy only when `GA4_PROXY_ENDPOINT` is configured.
 
-For a Chrome extension, set up GA4 like a web stream, but build reports around custom events rather than page views.
+For a Chrome extension, set up GA4 like a web stream, but build reports around custom events rather than page views. Keep `GA4_API_SECRET` only in Cloudflare Worker settings, never in the extension bundle.
 
 ## Setup
 
 1. In GA4, create or use a Web data stream.
 2. In the Web stream details, create a Measurement Protocol API secret.
-3. Build the extension with:
+3. In Cloudflare Worker Settings > Variables & Secrets, set:
+
+   - `GA4_MEASUREMENT_ID`
+   - `GA4_API_SECRET`
+
+4. Deploy the Worker from `/worker`.
+5. Build the extension with only the public Worker endpoint:
 
 ```bash
-GA4_MEASUREMENT_ID=G-XXXXXXXXXX GA4_API_SECRET=xxxx npm run build
+GA4_PROXY_ENDPOINT=https://keyboard-asmr-ga4-proxy.<account>.workers.dev npm run build
 ```
 
-4. Wait until at least one full day has passed with usage, because the extension flushes previous-day aggregate buckets at most once per day.
-5. Register the custom dimensions and metrics below before building reports.
+6. Wait until at least one full day has passed with usage, because the extension flushes previous-day aggregate buckets at most once per day.
+7. Register the custom dimensions and metrics below before building reports.
 
 ## Custom Dimensions
 

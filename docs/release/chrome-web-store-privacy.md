@@ -1,6 +1,6 @@
 # Chrome Web Store Privacy Disclosure
 
-Use this checklist before shipping a release build with either `GA4_MEASUREMENT_ID` / `GA4_API_SECRET` or `DIAGNOSTIC_REPORT_ENDPOINT` configured.
+Use this checklist before shipping a release build with either `GA4_PROXY_ENDPOINT` or `DIAGNOSTIC_REPORT_ENDPOINT` configured.
 
 ## Current Data Position
 
@@ -49,7 +49,7 @@ If diagnostic sharing is enabled, Keyboard ASMR can send a support report only a
 
 Data is used only to improve Keyboard ASMR reliability, understand aggregate profile demand, and support users who report issues. Data is not sold and is not used for personalized, retargeted, or interest-based advertising.
 
-Analytics data is processed by Google Analytics if configured. Diagnostic reports are sent only to the developer-controlled support endpoint if configured. All remote diagnostic upload endpoints must use HTTPS.
+Analytics data is processed by Google Analytics through the developer-controlled Cloudflare Worker proxy if configured. Diagnostic reports are sent only to the developer-controlled support endpoint if configured. All remote analytics and diagnostic endpoints must use HTTPS.
 
 Users can disable diagnostic sharing from the extension popup. Removing the extension clears extension-local storage according to Chrome's extension storage behavior.
 ```
@@ -58,9 +58,10 @@ Users can disable diagnostic sharing from the extension popup. Removing the exte
 
 Do not configure these env vars for a release build until the privacy tab and privacy policy are updated:
 
-- `GA4_MEASUREMENT_ID`
-- `GA4_API_SECRET`
+- `GA4_PROXY_ENDPOINT`
 - `DIAGNOSTIC_REPORT_ENDPOINT`
+
+Never configure `GA4_API_SECRET` in the extension release build. It belongs only in Cloudflare Worker Settings > Variables & Secrets.
 
 Release build must pass:
 

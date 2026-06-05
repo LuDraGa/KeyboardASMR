@@ -1,9 +1,6 @@
 export const ANALYTICS_CONFIG = {
-  measurementId: process.env.GA4_MEASUREMENT_ID || '',
-  apiSecret: process.env.GA4_API_SECRET || '',
-  endpoint: 'https://www.google-analytics.com/mp/collect',
+  proxyEndpoint: process.env.GA4_PROXY_ENDPOINT || '',
   dailyRetentionDays: 14,
 };
 
-export const isAnalyticsConfigured = () =>
-  Boolean(ANALYTICS_CONFIG.measurementId && ANALYTICS_CONFIG.apiSecret);
+export const isAnalyticsConfigured = () => Boolean(ANALYTICS_CONFIG.proxyEndpoint);

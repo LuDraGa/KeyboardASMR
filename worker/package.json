@@ -1,0 +1,15 @@
+{
+  "name": "keyboard-asmr-ga4-proxy",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "dry-run": "wrangler deploy --dry-run --outdir dist",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.4",
+    "wrangler": "^4.0.0"
+  }
+}
