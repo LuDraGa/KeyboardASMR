@@ -77,13 +77,52 @@ import { getKeyPlaybackInfo } from '../../shared/keyCategories';
   }
 
   function hostnameMatches(rule) {
-    const hostname = window.location.hostname;
+    const hostnames = getContextHostnames();
 
-    if (rule.hosts?.includes(hostname)) {
+    if (rule.hosts?.some(hostname => hostnames.includes(hostname))) {
       return true;
     }
 
-    return rule.hostIncludes?.some(hostPart => hostname.includes(hostPart)) || false;
+    return (
+      rule.hostIncludes?.some(hostPart =>
+        hostnames.some(hostname => hostname.includes(hostPart))
+      ) || false
+    );
+  }
+
+  function addHostname(hostnames, hostname) {
+    if (hostname && !hostnames.includes(hostname)) {
+      hostnames.push(hostname);
+    }
+  }
+
+  function getHostnameFromUrl(url) {
+    try {
+      return url ? new URL(url).hostname : '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function getContextHostnames() {
+    const hostnames = [];
+    addHostname(hostnames, window.location.hostname);
+    addHostname(hostnames, getHostnameFromUrl(document.referrer));
+
+    let frame = window;
+    for (let depth = 0; depth < 5; depth += 1) {
+      try {
+        addHostname(hostnames, frame.location.hostname);
+        if (frame === frame.parent) {
+          break;
+        }
+        frame = frame.parent;
+      } catch (error) {
+        break;
+      }
+    }
+
+    return hostnames;
   }
 
   function matchesSelector(element, selector) {
@@ -108,6 +147,60 @@ import { getKeyPlaybackInfo } from '../../shared/keyCategories';
     const isInput = ['input', 'textarea', 'select'].includes(tagName);
 
     return isEditable || isInput;
+  }
+
+  function getFrameElement() {
+    try {
+      return window.frameElement;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function isDocumentLevelTarget(element) {
+    return (
+      element === window ||
+      element === document ||
+      element === document.body ||
+      element === document.documentElement
+    );
+  }
+
+  function isGoogleDocsTextEventFrame() {
+    if (!hostnameMatches({ hosts: ['docs.google.com'] })) {
+      return false;
+    }
+
+    const frameElement = getFrameElement();
+    if (matchesSelector(frameElement, '.docs-texteventtarget-iframe')) {
+      return true;
+    }
+
+    // Google Docs often routes real typing through a same-origin about:blank
+    // text-event frame whose keyboard target is body/html instead of an input.
+    return window.location.href === 'about:blank';
+  }
+
+  function getGoogleDocsTextEventContext(event) {
+    if (!isGoogleDocsTextEventFrame()) {
+      return null;
+    }
+
+    const eventPath = typeof event.composedPath === 'function' ? event.composedPath() : [];
+    const hasDocumentLevelTarget =
+      isDocumentLevelTarget(event.target) || eventPath.some(isDocumentLevelTarget);
+
+    if (!hasDocumentLevelTarget) {
+      return null;
+    }
+
+    activeCompatibilityModes.add('google_docs');
+    publishCompatibilityStatus();
+
+    return {
+      target: document.body || document.documentElement || event.target,
+      mode: 'google_docs',
+    };
   }
 
   // Keyboard events from Shadow DOM are retargeted to the host. Use the
@@ -162,6 +255,11 @@ import { getKeyPlaybackInfo } from '../../shared/keyCategories';
 
     if (typingTarget) {
       return { target: typingTarget, mode: null };
+    }
+
+    const googleDocsTextEventContext = getGoogleDocsTextEventContext(event);
+    if (googleDocsTextEventContext) {
+      return googleDocsTextEventContext;
     }
 
     const compatibilityTarget = getCompatibilityTarget(event);

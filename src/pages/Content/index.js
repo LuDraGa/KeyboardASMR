@@ -663,8 +663,8 @@ function enableFallbackListeners() {
   fallbackListenersEnabled = true;
   runtimeStats.injectionFallbackCount += 1;
   console.log('Keyboard ASMR: Enabling fallback event listeners');
-  document.addEventListener('keydown', handleFallbackKeydown);
-  document.addEventListener('keyup', handleFallbackKeyup);
+  document.addEventListener('keydown', handleFallbackKeydown, true);
+  document.addEventListener('keyup', handleFallbackKeyup, true);
 }
 
 // Wait for injected script confirmation, enable fallback if timeout
