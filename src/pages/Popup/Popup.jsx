@@ -9,14 +9,12 @@ import {
 } from '../../shared/config';
 import { profileLoader } from '../../utils/profileLoader';
 
-const STATUS_COPY_RESET_DELAY = 1500;
 const VOLUME_WRITE_DELAY = 250;
 
 const createDisconnectedStatus = (reason, context = {}) => ({
   state: 'disconnected',
-  title: 'Keyboard ASMR is not active here',
-  message:
-    'Refresh this tab to start Keyboard ASMR. Chrome pages and the address bar are unsupported.',
+  title: 'Disconnected',
+  message: 'Content script status is unavailable.',
   reason,
   context,
   report: null,
@@ -211,9 +209,7 @@ const Popup = () => {
     message: 'Looking for Keyboard ASMR on this page.',
     report: null,
   });
-  const [copyState, setCopyState] = useState('idle');
   const [diagnosticsOptIn, setDiagnosticsOptIn] = useState(false);
-  const [diagnosticShareState, setDiagnosticShareState] = useState('idle');
   const volumeWriteTimerRef = useRef(null);
   const pendingVolumeRef = useRef(null);
   const autoDiagnosticSignatureRef = useRef(null);
@@ -560,45 +556,9 @@ const Popup = () => {
     };
   }, [diagnosticsOptIn, isMuted, soundProfiles, soundSet, tabStatus, volume]);
 
-  const buildDiagnosticReport = useCallback(() => {
-    return `Keyboard ASMR Diagnostic
-${JSON.stringify(buildDiagnosticPayload(), null, 2)}`;
-  }, [buildDiagnosticPayload]);
-
-  const copyDiagnosticReport = useCallback(async () => {
-    const report = buildDiagnosticReport();
-
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(report);
-      } else {
-        const textArea = document.createElement('textarea');
-        textArea.value = report;
-        textArea.setAttribute('readonly', '');
-        textArea.style.position = 'fixed';
-        textArea.style.opacity = '0';
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-      }
-
-      setCopyState('copied');
-      recordAnalyticsEvent('diagnostic_copied');
-      setTimeout(() => setCopyState('idle'), STATUS_COPY_RESET_DELAY);
-    } catch (error) {
-      console.error('Failed to copy diagnostic report:', error);
-      setCopyState('failed');
-      setTimeout(() => setCopyState('idle'), STATUS_COPY_RESET_DELAY);
-    }
-  }, [buildDiagnosticReport]);
-
   const shareDiagnosticReport = useCallback(
     async ({ automatic = false } = {}) => {
       if (!isDiagnosticUploadConfigured()) {
-        if (!automatic) {
-          await copyDiagnosticReport();
-        }
         return;
       }
 
@@ -607,7 +567,6 @@ ${JSON.stringify(buildDiagnosticPayload(), null, 2)}`;
       }
 
       const payload = buildDiagnosticPayload();
-      setDiagnosticShareState('sharing');
 
       try {
         await new Promise((resolve, reject) => {
@@ -633,17 +592,13 @@ ${JSON.stringify(buildDiagnosticPayload(), null, 2)}`;
           );
         });
 
-        setDiagnosticShareState('shared');
         recordAnalyticsEvent('diagnostic_shared', { automatic });
-        setTimeout(() => setDiagnosticShareState('idle'), STATUS_COPY_RESET_DELAY);
       } catch (error) {
         console.error('Failed to share diagnostic report:', error);
-        setDiagnosticShareState('failed');
         recordAnalyticsEvent('diagnostic_share_failed', { automatic });
-        setTimeout(() => setDiagnosticShareState('idle'), STATUS_COPY_RESET_DELAY);
       }
     },
-    [buildDiagnosticPayload, copyDiagnosticReport, diagnosticsOptIn]
+    [buildDiagnosticPayload, diagnosticsOptIn]
   );
 
   const toggleDiagnosticsOptIn = () => {
@@ -668,11 +623,10 @@ ${JSON.stringify(buildDiagnosticPayload(), null, 2)}`;
     shareDiagnosticReport({ automatic: true });
   }, [diagnosticsOptIn, shareDiagnosticReport, tabStatus]);
 
-  const showTabHelp = tabStatus.state === 'disconnected';
   const diagnosticsUploadReady = isDiagnosticUploadConfigured();
 
   return (
-    <div className={`popup-container ${theme} ${showTabHelp ? 'tab-help-open' : ''}`}>
+    <div className={`popup-container ${theme}`}>
       {/* Header */}
       <div className='header'>
         <div className='logo-section'>
@@ -699,41 +653,6 @@ ${JSON.stringify(buildDiagnosticPayload(), null, 2)}`;
           </button>
         </div>
       </div>
-
-      {showTabHelp && (
-        <div className={`support-panel ${tabStatus.state}`}>
-          <div className='support-header'>
-            <div>
-              <h2>Not active</h2>
-              <p>{tabStatus.title}</p>
-            </div>
-          </div>
-          <p className='support-message'>{tabStatus.message}</p>
-          <div className='support-actions'>
-            <button className='support-action-btn' onClick={requestTabStatus}>
-              Check again
-            </button>
-            {diagnosticsUploadReady && (
-              <button className='support-action-btn' onClick={() => shareDiagnosticReport()}>
-                {diagnosticShareState === 'shared'
-                  ? 'Shared'
-                  : diagnosticShareState === 'failed'
-                  ? 'Share failed'
-                  : diagnosticShareState === 'sharing'
-                  ? 'Sharing'
-                  : 'Share report'}
-              </button>
-            )}
-            <button className='support-action-btn' onClick={copyDiagnosticReport}>
-              {copyState === 'copied'
-                ? 'Copied'
-                : copyState === 'failed'
-                ? 'Copy failed'
-                : 'Copy support report'}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Sound Profiles */}
       <div className='sound-profiles'>

@@ -130,93 +130,6 @@ body {
   background: #4752c4 !important;
 }
 
-/* Troubleshooting */
-.support-panel {
-  padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  margin: 0.7rem 0.8rem 0;
-  border-radius: 0.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  flex-shrink: 0;
-  width: calc(100% - 1.6rem);
-  box-sizing: border-box;
-}
-
-.support-panel.ready {
-  border-color: rgba(76, 175, 80, 0.45);
-}
-
-.support-panel.muted,
-.support-panel.attention {
-  border-color: rgba(255, 193, 7, 0.5);
-}
-
-.support-panel.disconnected {
-  border-color: rgba(244, 67, 54, 0.45);
-}
-
-.support-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
-  align-items: flex-start;
-}
-
-.support-header h2 {
-  font-size: 0.78rem;
-  font-weight: 700;
-  opacity: 0.85;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.support-header p,
-.support-message {
-  font-size: 0.72rem;
-  line-height: 1.25;
-  opacity: 0.75;
-}
-
-.support-message {
-  margin-top: 0.35rem;
-}
-
-.support-pill {
-  flex-shrink: 0;
-  padding: 0.2rem 0.45rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  font-size: 0.6rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.support-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.45rem;
-  margin-top: 0.6rem;
-}
-
-.support-action-btn {
-  height: 1.9rem;
-  border: none;
-  border-radius: 0.5rem;
-  background: rgba(255, 255, 255, 0.12);
-  color: inherit;
-  cursor: pointer;
-  font-size: 0.72rem;
-  font-weight: 700;
-  transition: all 0.2s ease;
-}
-
-.support-action-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
-}
-
 /* Sound Profiles Section */
 .sound-profiles {
   padding: 0.8rem 0.8rem;
@@ -227,10 +140,6 @@ body {
   min-height: 0;
   width: 100%;
   max-height: 280px; /* Show ~6.5 profiles to hint at more content */
-}
-
-.popup-container.tab-help-open .sound-profiles {
-  max-height: 235px;
 }
 
 .sound-profiles h2 {
@@ -752,7 +661,6 @@ kbd {
 .popup-container.light .header,
 .popup-container.light .volume-section,
 .popup-container.light .stats-panel,
-.popup-container.light .support-panel,
 .popup-container.light .diagnostics-section {
   background: rgba(0, 0, 0, 0.05);
   border-color: rgba(0, 0, 0, 0.1);
@@ -768,15 +676,6 @@ kbd {
 
 .popup-container.light .stat-card {
   background: rgba(0, 0, 0, 0.05);
-}
-
-.popup-container.light .support-pill,
-.popup-container.light .support-action-btn {
-  background: rgba(0, 0, 0, 0.06);
-}
-
-.popup-container.light .support-action-btn:hover {
-  background: rgba(0, 0, 0, 0.1);
 }
 
 .popup-container.light .toggle-switch {
