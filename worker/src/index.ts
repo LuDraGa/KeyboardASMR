@@ -32,10 +32,19 @@ const ALLOWED_EVENT_NAMES = new Set([
   'daily_first_sound_latency',
 ]);
 
-const ALLOWED_PARAM_KEYS = new Set([
+const CUSTOM_DIMENSION_PARAM_KEYS = new Set([
   'event_date',
-  'engagement_time_msec',
-  'session_id',
+  'profile_id',
+  'status_state',
+  'status_reason',
+  'capture_mode',
+  'compatibility_mode',
+  'error_class',
+  'volume_bucket',
+  'latency_bucket',
+]);
+
+const CUSTOM_METRIC_PARAM_KEYS = new Set([
   'popup_open_count',
   'profile_select_count',
   'preview_play_count',
@@ -49,27 +58,21 @@ const ALLOWED_PARAM_KEYS = new Set([
   'share_count',
   'auto_share_count',
   'share_failure_count',
-  'profile_id',
   'selected_count',
   'previewed_count',
   'key_event_count',
   'played_sound_count',
   'dropped_sound_count',
   'first_sound_success_count',
-  'status_state',
   'status_count',
-  'status_reason',
   'reason_count',
-  'capture_mode',
-  'compatibility_mode',
   'mode_count',
-  'error_class',
   'error_count',
-  'volume_bucket',
   'volume_count',
-  'latency_bucket',
   'latency_count',
 ]);
+
+const INTERNAL_NUMERIC_PARAM_KEYS = new Set(['engagement_time_msec', 'session_id']);
 
 function getCorsHeaders(request: Request, env: Env): HeadersInit {
   const requestOrigin = request.headers.get('Origin');
@@ -114,17 +117,15 @@ function isValidClientId(clientId: unknown): clientId is string {
   return typeof clientId === 'string' && /^[A-Za-z0-9._-]{8,128}$/.test(clientId);
 }
 
-function sanitizeParamValue(value: unknown) {
-  if (typeof value === 'string') {
+function sanitizeParamValue(key: string, value: unknown) {
+  if (CUSTOM_DIMENSION_PARAM_KEYS.has(key)) {
+    if (typeof value !== 'string') return undefined;
     return value.slice(0, 100);
   }
 
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return Math.max(0, Math.min(value, 1_000_000_000));
-  }
-
-  if (typeof value === 'boolean') {
-    return value;
+  if (CUSTOM_METRIC_PARAM_KEYS.has(key) || INTERNAL_NUMERIC_PARAM_KEYS.has(key)) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
+    return Math.max(0, Math.min(Math.floor(value), 1_000_000_000));
   }
 
   return undefined;
@@ -151,9 +152,15 @@ function sanitizeEvent(event: unknown): AnalyticsEvent | null {
   }
 
   for (const [key, value] of Object.entries(params)) {
-    if (!ALLOWED_PARAM_KEYS.has(key)) continue;
+    if (
+      !CUSTOM_DIMENSION_PARAM_KEYS.has(key) &&
+      !CUSTOM_METRIC_PARAM_KEYS.has(key) &&
+      !INTERNAL_NUMERIC_PARAM_KEYS.has(key)
+    ) {
+      continue;
+    }
 
-    const sanitizedValue = sanitizeParamValue(value);
+    const sanitizedValue = sanitizeParamValue(key, value);
     if (sanitizedValue !== undefined) {
       sanitizedParams[key] = sanitizedValue;
     }

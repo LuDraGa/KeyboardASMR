@@ -18,6 +18,34 @@ var secretsPath = path.join(__dirname, 'secrets.' + env.NODE_ENV + '.js');
 
 var fileExtensions = ['jpg', 'jpeg', 'png', 'gif', 'eot', 'otf', 'svg', 'ttf', 'woff', 'woff2'];
 
+function loadDotEnv(dotEnvPath) {
+  if (!fileSystem.existsSync(dotEnvPath)) return;
+
+  fileSystem
+    .readFileSync(dotEnvPath, 'utf8')
+    .split(/\r?\n/)
+    .forEach((line) => {
+      const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+      if (!match) return;
+
+      const key = match[1];
+      let value = match[2] || '';
+
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+
+      if (process.env[key] === undefined) {
+        process.env[key] = value;
+      }
+    });
+}
+
+loadDotEnv(path.join(__dirname, '.env'));
+
 if (fileSystem.existsSync(secretsPath)) {
   alias['secrets'] = secretsPath;
 }

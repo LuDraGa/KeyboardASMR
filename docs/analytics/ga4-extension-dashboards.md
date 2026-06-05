@@ -14,18 +14,25 @@ For a Chrome extension, set up GA4 like a web stream, but build reports around c
    - `GA4_API_SECRET`
 
 4. Deploy the Worker from `/worker`.
-5. Build the extension with only the public Worker endpoint:
+5. Put the public Worker endpoint in local `.env`:
 
 ```bash
-GA4_PROXY_ENDPOINT=https://keyboard-asmr-ga4-proxy.<account>.workers.dev npm run build
+GA4_PROXY_ENDPOINT=https://keyboardasmr.<account>.workers.dev
 ```
 
-6. Wait until at least one full day has passed with usage, because the extension flushes previous-day aggregate buckets at most once per day.
-7. Register the custom dimensions and metrics below before building reports.
+6. Build the extension:
+
+```bash
+npm run build
+```
+
+7. Wait until at least one full day has passed with usage, because the extension flushes previous-day aggregate buckets at most once per day.
+8. Register the custom dimensions and metrics below before building reports.
 
 ## Custom Dimensions
 
 Create these as event-scoped custom dimensions in Admin > Data display > Custom definitions.
+Do not rename these event parameters; GA4 custom definitions are tied to the exact names.
 
 | Dimension name     | Event parameter      |
 | ------------------ | -------------------- |
@@ -42,6 +49,7 @@ Create these as event-scoped custom dimensions in Admin > Data display > Custom 
 ## Custom Metrics
 
 Create these as event-scoped custom metrics.
+Metrics must be sent as numeric count parameters, not strings.
 
 | Metric name                    | Event parameter             | Unit     |
 | ------------------------------ | --------------------------- | -------- |

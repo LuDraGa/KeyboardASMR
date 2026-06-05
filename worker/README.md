@@ -25,10 +25,16 @@ The Worker name in Cloudflare must match `name` in `wrangler.jsonc`. Rename eith
 
 ## Extension Build
 
-After the Worker is deployed, build the extension with only the public Worker URL:
+After the Worker is deployed, put the public Worker URL in local `.env`:
 
 ```bash
-GA4_PROXY_ENDPOINT=https://keyboard-asmr-ga4-proxy.<account>.workers.dev npm run build
+GA4_PROXY_ENDPOINT=https://keyboardasmr.<account>.workers.dev
+```
+
+Then build:
+
+```bash
+npm run build
 ```
 
 Do not put `GA4_API_SECRET` or `GA4_MEASUREMENT_ID` in the extension release build.

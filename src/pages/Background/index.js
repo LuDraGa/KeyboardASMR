@@ -58,6 +58,17 @@ function incrementCounter(target, key, amount = 1) {
   target[key] = (target[key] || 0) + count;
 }
 
+function toAnalyticsDimension(value, fallback = 'unknown') {
+  if (value === undefined || value === null || value === '') return fallback;
+  return String(value);
+}
+
+function toAnalyticsMetric(value) {
+  const count = Number(value);
+  if (!Number.isFinite(count) || count <= 0) return 0;
+  return Math.floor(count);
+}
+
 function getEmptyProfileBucket() {
   return {
     selectedCount: 0,
@@ -155,7 +166,7 @@ function getDailyBucket(state, dateKey = getLocalDateKey()) {
 }
 
 function getProfileBucket(bucket, profileId) {
-  const key = profileId || 'unknown';
+  const key = toAnalyticsDimension(profileId);
   bucket.profiles[key] = normalizeProfileBucket(bucket.profiles[key]);
   return bucket.profiles[key];
 }
@@ -232,9 +243,9 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
   const events = [];
   const normalizedBucket = normalizeDailyBucket(bucket);
   const baseParams = {
-    event_date: dateKey,
+    event_date: toAnalyticsDimension(dateKey),
     engagement_time_msec: 100,
-    session_id: dateKey.replace(/-/g, ''),
+    session_id: Number(dateKey.replace(/-/g, '')) || 0,
   };
 
   if (
@@ -249,12 +260,12 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
       name: 'daily_popup_usage',
       params: {
         ...baseParams,
-        popup_open_count: normalizedBucket.popup.openCount,
-        profile_select_count: normalizedBucket.popup.profileSelectCount,
-        preview_play_count: normalizedBucket.popup.previewPlayCount,
-        mute_toggle_count: normalizedBucket.popup.muteToggleCount,
-        diagnostic_copy_count: normalizedBucket.popup.diagnosticCopyCount,
-        volume_change_count: normalizedBucket.popup.volumeChangeCount,
+        popup_open_count: toAnalyticsMetric(normalizedBucket.popup.openCount),
+        profile_select_count: toAnalyticsMetric(normalizedBucket.popup.profileSelectCount),
+        preview_play_count: toAnalyticsMetric(normalizedBucket.popup.previewPlayCount),
+        mute_toggle_count: toAnalyticsMetric(normalizedBucket.popup.muteToggleCount),
+        diagnostic_copy_count: toAnalyticsMetric(normalizedBucket.popup.diagnosticCopyCount),
+        volume_change_count: toAnalyticsMetric(normalizedBucket.popup.volumeChangeCount),
       },
     });
   }
@@ -264,8 +275,8 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
       name: 'daily_extension_lifecycle',
       params: {
         ...baseParams,
-        install_count: normalizedBucket.lifecycle.installCount,
-        update_count: normalizedBucket.lifecycle.updateCount,
+        install_count: toAnalyticsMetric(normalizedBucket.lifecycle.installCount),
+        update_count: toAnalyticsMetric(normalizedBucket.lifecycle.updateCount),
       },
     });
   }
@@ -281,11 +292,11 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
       name: 'daily_diagnostics_usage',
       params: {
         ...baseParams,
-        opt_in_count: normalizedBucket.diagnostics.optInCount,
-        opt_out_count: normalizedBucket.diagnostics.optOutCount,
-        share_count: normalizedBucket.diagnostics.shareCount,
-        auto_share_count: normalizedBucket.diagnostics.autoShareCount,
-        share_failure_count: normalizedBucket.diagnostics.shareFailureCount,
+        opt_in_count: toAnalyticsMetric(normalizedBucket.diagnostics.optInCount),
+        opt_out_count: toAnalyticsMetric(normalizedBucket.diagnostics.optOutCount),
+        share_count: toAnalyticsMetric(normalizedBucket.diagnostics.shareCount),
+        auto_share_count: toAnalyticsMetric(normalizedBucket.diagnostics.autoShareCount),
+        share_failure_count: toAnalyticsMetric(normalizedBucket.diagnostics.shareFailureCount),
       },
     });
   }
@@ -295,13 +306,13 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
       name: 'daily_profile_usage',
       params: {
         ...baseParams,
-        profile_id: profileId,
-        selected_count: profileStats.selectedCount || 0,
-        previewed_count: profileStats.previewedCount || 0,
-        key_event_count: profileStats.keyEventCount || 0,
-        played_sound_count: profileStats.playedSoundCount || 0,
-        dropped_sound_count: profileStats.droppedSoundCount || 0,
-        first_sound_success_count: profileStats.firstSoundSuccessCount || 0,
+        profile_id: toAnalyticsDimension(profileId),
+        selected_count: toAnalyticsMetric(profileStats.selectedCount),
+        previewed_count: toAnalyticsMetric(profileStats.previewedCount),
+        key_event_count: toAnalyticsMetric(profileStats.keyEventCount),
+        played_sound_count: toAnalyticsMetric(profileStats.playedSoundCount),
+        dropped_sound_count: toAnalyticsMetric(profileStats.droppedSoundCount),
+        first_sound_success_count: toAnalyticsMetric(profileStats.firstSoundSuccessCount),
       },
     });
   }
@@ -311,8 +322,8 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
       name: 'daily_status_result',
       params: {
         ...baseParams,
-        status_state: statusState,
-        status_count: count,
+        status_state: toAnalyticsDimension(statusState),
+        status_count: toAnalyticsMetric(count),
       },
     });
   }
@@ -322,8 +333,8 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
       name: 'daily_status_reason',
       params: {
         ...baseParams,
-        status_reason: statusReason,
-        reason_count: count,
+        status_reason: toAnalyticsDimension(statusReason, 'none'),
+        reason_count: toAnalyticsMetric(count),
       },
     });
   }
@@ -333,8 +344,8 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
       name: 'daily_capture_mode',
       params: {
         ...baseParams,
-        capture_mode: captureMode,
-        mode_count: count,
+        capture_mode: toAnalyticsDimension(captureMode),
+        mode_count: toAnalyticsMetric(count),
       },
     });
   }
@@ -344,8 +355,8 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
       name: 'daily_compatibility_mode',
       params: {
         ...baseParams,
-        compatibility_mode: compatibilityMode,
-        mode_count: count,
+        compatibility_mode: toAnalyticsDimension(compatibilityMode),
+        mode_count: toAnalyticsMetric(count),
       },
     });
   }
@@ -355,8 +366,8 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
       name: 'daily_error_class',
       params: {
         ...baseParams,
-        error_class: errorClass,
-        error_count: count,
+        error_class: toAnalyticsDimension(errorClass),
+        error_count: toAnalyticsMetric(count),
       },
     });
   }
@@ -366,8 +377,8 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
       name: 'daily_volume_bucket',
       params: {
         ...baseParams,
-        volume_bucket: volumeBucket,
-        volume_count: count,
+        volume_bucket: toAnalyticsDimension(volumeBucket),
+        volume_count: toAnalyticsMetric(count),
       },
     });
   }
@@ -377,8 +388,8 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
       name: 'daily_first_sound_latency',
       params: {
         ...baseParams,
-        latency_bucket: latencyBucket,
-        latency_count: count,
+        latency_bucket: toAnalyticsDimension(latencyBucket),
+        latency_count: toAnalyticsMetric(count),
       },
     });
   }
@@ -537,10 +548,10 @@ async function recordProfileUsageDelta(profileDeltas = {}) {
 
   for (const [profileId, delta = {}] of Object.entries(profileDeltas || {})) {
     const profileBucket = getProfileBucket(bucket, profileId);
-    profileBucket.keyEventCount += delta.keyEventCount || 0;
-    profileBucket.playedSoundCount += delta.playedSoundCount || 0;
-    profileBucket.droppedSoundCount += delta.droppedSoundCount || 0;
-    profileBucket.firstSoundSuccessCount += delta.firstSoundSuccessCount || 0;
+    profileBucket.keyEventCount += toAnalyticsMetric(delta.keyEventCount);
+    profileBucket.playedSoundCount += toAnalyticsMetric(delta.playedSoundCount);
+    profileBucket.droppedSoundCount += toAnalyticsMetric(delta.droppedSoundCount);
+    profileBucket.firstSoundSuccessCount += toAnalyticsMetric(delta.firstSoundSuccessCount);
   }
 
   pruneOldBuckets(state);
