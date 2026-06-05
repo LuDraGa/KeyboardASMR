@@ -517,6 +517,79 @@ body {
   flex-shrink: 0;
 }
 
+/* Diagnostics */
+.diagnostics-section {
+  padding: 0.65rem 0.8rem;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  margin: 0 0.8rem 0.8rem;
+  border-radius: 0.65rem;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: calc(100% - 1.6rem);
+}
+
+.diagnostics-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.diagnostics-toggle span:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.diagnostics-toggle strong {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+
+.diagnostics-toggle small {
+  font-size: 0.65rem;
+  opacity: 0.65;
+}
+
+.diagnostics-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 2.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  flex-shrink: 0;
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 0.16rem;
+  left: 0.16rem;
+  width: 0.93rem;
+  height: 0.93rem;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.2s ease;
+}
+
+.diagnostics-toggle input:checked + .toggle-switch {
+  background: #667eea;
+}
+
+.diagnostics-toggle input:checked + .toggle-switch::after {
+  transform: translateX(1rem);
+}
+
 /* Stats Panel */
 .stats-panel {
   padding: 0.8rem;
@@ -679,7 +752,8 @@ kbd {
 .popup-container.light .header,
 .popup-container.light .volume-section,
 .popup-container.light .stats-panel,
-.popup-container.light .support-panel {
+.popup-container.light .support-panel,
+.popup-container.light .diagnostics-section {
   background: rgba(0, 0, 0, 0.05);
   border-color: rgba(0, 0, 0, 0.1);
 }
@@ -703,6 +777,14 @@ kbd {
 
 .popup-container.light .support-action-btn:hover {
   background: rgba(0, 0, 0, 0.1);
+}
+
+.popup-container.light .toggle-switch {
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.popup-container.light .diagnostics-toggle input:checked + .toggle-switch {
+  background: #667eea;
 }
 
 .popup-container.light kbd {

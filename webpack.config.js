@@ -122,6 +122,7 @@ var options = {
       NODE_ENV: process.env.NODE_ENV || 'development',
       GA4_MEASUREMENT_ID: '',
       GA4_API_SECRET: '',
+      DIAGNOSTIC_REPORT_ENDPOINT: '',
     }),
     new CopyWebpackPlugin({
       patterns: [

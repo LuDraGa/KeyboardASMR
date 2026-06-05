@@ -4,6 +4,7 @@ import {
   DEFAULT_SETTINGS,
   MESSAGE_TYPES,
   STORAGE_KEYS,
+  isDiagnosticUploadConfigured,
   resolveSoundSetId,
 } from '../../shared/config';
 import { profileLoader } from '../../utils/profileLoader';
@@ -211,8 +212,11 @@ const Popup = () => {
     report: null,
   });
   const [copyState, setCopyState] = useState('idle');
+  const [diagnosticsOptIn, setDiagnosticsOptIn] = useState(false);
+  const [diagnosticShareState, setDiagnosticShareState] = useState('idle');
   const volumeWriteTimerRef = useRef(null);
   const pendingVolumeRef = useRef(null);
+  const autoDiagnosticSignatureRef = useRef(null);
 
   // Audio context for sound preview
   const [audioContext, setAudioContext] = useState(null);
@@ -399,7 +403,13 @@ const Popup = () => {
 
       // Load settings
       chrome.storage.sync.get(
-        [STORAGE_KEYS.SOUND_SET, STORAGE_KEYS.VOLUME, STORAGE_KEYS.IS_MUTED, STORAGE_KEYS.THEME],
+        [
+          STORAGE_KEYS.SOUND_SET,
+          STORAGE_KEYS.VOLUME,
+          STORAGE_KEYS.IS_MUTED,
+          STORAGE_KEYS.THEME,
+          STORAGE_KEYS.DIAGNOSTICS_OPT_IN,
+        ],
         result => {
           setSoundSet(
             resolveSoundSetId(result[STORAGE_KEYS.SOUND_SET] || DEFAULT_SETTINGS.soundSet)
@@ -408,6 +418,9 @@ const Popup = () => {
           if (result[STORAGE_KEYS.IS_MUTED] !== undefined)
             setIsMuted(result[STORAGE_KEYS.IS_MUTED]);
           if (result[STORAGE_KEYS.THEME]) setTheme(result[STORAGE_KEYS.THEME]);
+          if (result[STORAGE_KEYS.DIAGNOSTICS_OPT_IN] !== undefined) {
+            setDiagnosticsOptIn(Boolean(result[STORAGE_KEYS.DIAGNOSTICS_OPT_IN]));
+          }
         }
       );
 
@@ -498,57 +511,61 @@ const Popup = () => {
     chrome.storage.sync.set({ [STORAGE_KEYS.THEME]: newTheme });
   };
 
-  const buildDiagnosticReport = () => {
+  const buildDiagnosticPayload = useCallback(() => {
     const selectedProfile = soundProfiles.find(profile => profile.id === soundSet);
     const diagnosticHints = getDiagnosticHints(tabStatus);
 
-    return `Keyboard ASMR Diagnostic
-${JSON.stringify(
-  {
-    generatedAt: new Date().toISOString(),
-    privacy: {
-      excludes: ['typed text', 'raw key values', 'raw page URLs', 'browsing history'],
-    },
-    extension: {
-      version: chrome.runtime.getManifest?.().version || 'unknown',
-    },
-    environment: {
-      userAgent: navigator.userAgent,
-      platform: navigator.platform,
-      language: navigator.language,
-    },
-    popup: {
-      statusState: tabStatus.state,
-      statusTitle: tabStatus.title,
-      selectedProfile: soundSet,
-      selectedProfileName: selectedProfile?.name || 'unknown',
-      muted: isMuted,
-      volumePercent: volume,
-      profilesLoaded: soundProfiles.length,
-    },
-    diagnosis: {
-      hints: diagnosticHints,
-      lastErrorCode: tabStatus.report?.stats?.lastErrorCode || null,
-      lastErrorAt: tabStatus.report?.stats?.lastErrorAt || null,
-      lastErrorContext: tabStatus.report?.stats?.lastErrorContext || null,
-      firstSoundAt: tabStatus.report?.stats?.firstSoundAt || null,
-      firstSoundLatencyMs: tabStatus.report?.stats?.firstSoundLatencyMs || null,
-      firstSoundFailureCode: tabStatus.report?.stats?.firstSoundFailureCode || null,
-      keyCategoryCounts: tabStatus.report?.stats?.keyCategoryCounts || {},
-      compatibilityModes: tabStatus.report?.compatibilityModes || [],
-    },
-    tab: tabStatus.report || {
-      state: tabStatus.state,
-      reason: tabStatus.reason || 'no_content_status',
-      context: tabStatus.context || {},
-    },
-  },
-  null,
-  2
-)}`;
-  };
+    return {
+      generatedAt: new Date().toISOString(),
+      privacy: {
+        excludes: ['typed text', 'raw key values', 'raw page URLs', 'browsing history'],
+      },
+      extension: {
+        version: chrome.runtime.getManifest?.().version || 'unknown',
+      },
+      environment: {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+      },
+      popup: {
+        statusState: tabStatus.state,
+        statusTitle: tabStatus.title,
+        selectedProfile: soundSet,
+        selectedProfileName: selectedProfile?.name || 'unknown',
+        muted: isMuted,
+        volumePercent: volume,
+        profilesLoaded: soundProfiles.length,
+      },
+      diagnostics: {
+        optIn: diagnosticsOptIn,
+        uploadConfigured: isDiagnosticUploadConfigured(),
+      },
+      diagnosis: {
+        hints: diagnosticHints,
+        lastErrorCode: tabStatus.report?.stats?.lastErrorCode || null,
+        lastErrorAt: tabStatus.report?.stats?.lastErrorAt || null,
+        lastErrorContext: tabStatus.report?.stats?.lastErrorContext || null,
+        firstSoundAt: tabStatus.report?.stats?.firstSoundAt || null,
+        firstSoundLatencyMs: tabStatus.report?.stats?.firstSoundLatencyMs || null,
+        firstSoundFailureCode: tabStatus.report?.stats?.firstSoundFailureCode || null,
+        keyCategoryCounts: tabStatus.report?.stats?.keyCategoryCounts || {},
+        compatibilityModes: tabStatus.report?.compatibilityModes || [],
+      },
+      tab: tabStatus.report || {
+        state: tabStatus.state,
+        reason: tabStatus.reason || 'no_content_status',
+        context: tabStatus.context || {},
+      },
+    };
+  }, [diagnosticsOptIn, isMuted, soundProfiles, soundSet, tabStatus, volume]);
 
-  const copyDiagnosticReport = async () => {
+  const buildDiagnosticReport = useCallback(() => {
+    return `Keyboard ASMR Diagnostic
+${JSON.stringify(buildDiagnosticPayload(), null, 2)}`;
+  }, [buildDiagnosticPayload]);
+
+  const copyDiagnosticReport = useCallback(async () => {
     const report = buildDiagnosticReport();
 
     try {
@@ -574,9 +591,85 @@ ${JSON.stringify(
       setCopyState('failed');
       setTimeout(() => setCopyState('idle'), STATUS_COPY_RESET_DELAY);
     }
+  }, [buildDiagnosticReport]);
+
+  const shareDiagnosticReport = useCallback(
+    async ({ automatic = false } = {}) => {
+      if (!isDiagnosticUploadConfigured()) {
+        if (!automatic) {
+          await copyDiagnosticReport();
+        }
+        return;
+      }
+
+      if (automatic && !diagnosticsOptIn) {
+        return;
+      }
+
+      const payload = buildDiagnosticPayload();
+      setDiagnosticShareState('sharing');
+
+      try {
+        await new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage(
+            {
+              type: MESSAGE_TYPES.DIAGNOSTIC_REPORT_UPLOAD,
+              report: payload,
+              automatic,
+            },
+            response => {
+              if (chrome.runtime.lastError || !response?.ok) {
+                reject(
+                  new Error(
+                    chrome.runtime.lastError?.message ||
+                      response?.error ||
+                      'diagnostic_upload_failed'
+                  )
+                );
+                return;
+              }
+              resolve();
+            }
+          );
+        });
+
+        setDiagnosticShareState('shared');
+        recordAnalyticsEvent('diagnostic_shared', { automatic });
+        setTimeout(() => setDiagnosticShareState('idle'), STATUS_COPY_RESET_DELAY);
+      } catch (error) {
+        console.error('Failed to share diagnostic report:', error);
+        setDiagnosticShareState('failed');
+        recordAnalyticsEvent('diagnostic_share_failed', { automatic });
+        setTimeout(() => setDiagnosticShareState('idle'), STATUS_COPY_RESET_DELAY);
+      }
+    },
+    [buildDiagnosticPayload, copyDiagnosticReport, diagnosticsOptIn]
+  );
+
+  const toggleDiagnosticsOptIn = () => {
+    const nextValue = !diagnosticsOptIn;
+    setDiagnosticsOptIn(nextValue);
+    chrome.storage.sync.set({ [STORAGE_KEYS.DIAGNOSTICS_OPT_IN]: nextValue });
+    recordAnalyticsEvent('diagnostics_opt_in_changed', { enabled: nextValue });
   };
 
+  useEffect(() => {
+    if (!diagnosticsOptIn || !isDiagnosticUploadConfigured()) return;
+    if (!['attention', 'disconnected'].includes(tabStatus.state)) return;
+
+    const signature = [
+      tabStatus.state,
+      tabStatus.reason || tabStatus.report?.stats?.lastErrorCode || 'none',
+      tabStatus.report?.captureMode || 'none',
+    ].join(':');
+
+    if (autoDiagnosticSignatureRef.current === signature) return;
+    autoDiagnosticSignatureRef.current = signature;
+    shareDiagnosticReport({ automatic: true });
+  }, [diagnosticsOptIn, shareDiagnosticReport, tabStatus]);
+
   const showTabHelp = tabStatus.state === 'disconnected';
+  const diagnosticsUploadReady = isDiagnosticUploadConfigured();
 
   return (
     <div className={`popup-container ${theme} ${showTabHelp ? 'tab-help-open' : ''}`}>
@@ -620,6 +713,17 @@ ${JSON.stringify(
             <button className='support-action-btn' onClick={requestTabStatus}>
               Check again
             </button>
+            {diagnosticsUploadReady && (
+              <button className='support-action-btn' onClick={() => shareDiagnosticReport()}>
+                {diagnosticShareState === 'shared'
+                  ? 'Shared'
+                  : diagnosticShareState === 'failed'
+                  ? 'Share failed'
+                  : diagnosticShareState === 'sharing'
+                  ? 'Sharing'
+                  : 'Share report'}
+              </button>
+            )}
             <button className='support-action-btn' onClick={copyDiagnosticReport}>
               {copyState === 'copied'
                 ? 'Copied'
@@ -699,6 +803,19 @@ ${JSON.stringify(
           </div>
         </div>
       </div>
+
+      {diagnosticsUploadReady && (
+        <div className='diagnostics-section'>
+          <label className='diagnostics-toggle'>
+            <span>
+              <strong>Diagnostics</strong>
+              <small>Status and error codes only</small>
+            </span>
+            <input type='checkbox' checked={diagnosticsOptIn} onChange={toggleDiagnosticsOptIn} />
+            <span className='toggle-switch' />
+          </label>
+        </div>
+      )}
 
       {/* Footer */}
       <div className='footer'>

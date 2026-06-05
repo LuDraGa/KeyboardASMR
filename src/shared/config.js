@@ -202,6 +202,12 @@ export const DEFAULT_SETTINGS = {
   isMuted: false,
 };
 
+export const DIAGNOSTICS_CONFIG = {
+  endpoint: process.env.DIAGNOSTIC_REPORT_ENDPOINT || '',
+};
+
+export const isDiagnosticUploadConfigured = () => Boolean(DIAGNOSTICS_CONFIG.endpoint);
+
 // Message types for consistent communication
 export const MESSAGE_TYPES = {
   KEYPRESS: 'KEYPRESS',
@@ -211,6 +217,7 @@ export const MESSAGE_TYPES = {
   GET_STATUS: 'GET_STATUS',
   ANALYTICS_EVENT: 'ANALYTICS_EVENT',
   ANALYTICS_PROFILE_USAGE_DELTA: 'ANALYTICS_PROFILE_USAGE_DELTA',
+  DIAGNOSTIC_REPORT_UPLOAD: 'DIAGNOSTIC_REPORT_UPLOAD',
 };
 
 // Storage keys
@@ -219,6 +226,7 @@ export const STORAGE_KEYS = {
   VOLUME: 'volume',
   IS_MUTED: 'isMuted',
   THEME: 'theme',
+  DIAGNOSTICS_OPT_IN: 'diagnosticsOptIn',
 };
 
 export const ANALYTICS_STORAGE_KEYS = {

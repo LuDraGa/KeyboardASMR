@@ -18,7 +18,8 @@
 - [x] Show refresh guidance only when the popup cannot reach the current tab.
 - [x] Add install/update guidance: refresh existing tabs; unsupported on Chrome Web Store, chrome:// pages, and address bar.
 - [x] Add compatibility test pages for input, textarea, contenteditable, same-origin iframe, cross-origin iframe, and editor-like surfaces.
-- [ ] Add opt-in diagnostic report upload after a support endpoint and privacy disclosure are ready.
+- [x] Add endpoint-gated opt-in diagnostic report upload with manual share and auto-share on failure after opt-in.
+- [ ] Configure diagnostic report endpoint and final privacy disclosure before enabling uploads in release builds.
 
 ## Phase 2: Performance
 
@@ -37,7 +38,8 @@
 - [x] Aggregate profile changes and per-profile usage counts locally, then flush at most once per day.
 - [x] Track install/update, popup open, profile select, preview play, mute toggle, volume bucket, status result, diagnostic copy, and first sound success.
 - [x] Track error classes only, not typed keys, typed text, raw page URLs, or browsing history.
-- [ ] Add a privacy note in popup/settings before enabling diagnostic upload or analytics.
+- [x] Add a privacy note in popup/settings before enabling diagnostic upload.
+- [ ] Add final Chrome Web Store privacy disclosure before enabling diagnostic upload or analytics in release builds.
 - [ ] Create GA dashboards for activation, profile demand, reliability failure rate, retention, and conversion intent.
 
 ## Phase 4: Product Upgrades

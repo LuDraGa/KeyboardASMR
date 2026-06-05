@@ -1,8 +1,10 @@
 import {
   ANALYTICS_STORAGE_KEYS,
+  DIAGNOSTICS_CONFIG,
   DEFAULT_SETTINGS,
   MESSAGE_TYPES,
   STORAGE_KEYS,
+  isDiagnosticUploadConfigured,
 } from '../../shared/config';
 import { ANALYTICS_CONFIG, isAnalyticsConfigured } from '../../shared/analyticsConfig';
 
@@ -89,6 +91,13 @@ function getEmptyDailyBucket() {
       installCount: 0,
       updateCount: 0,
     },
+    diagnostics: {
+      optInCount: 0,
+      optOutCount: 0,
+      shareCount: 0,
+      autoShareCount: 0,
+      shareFailureCount: 0,
+    },
   };
 }
 
@@ -130,6 +139,10 @@ function normalizeDailyBucket(bucket = {}) {
     lifecycle: {
       ...emptyBucket.lifecycle,
       ...getObjectValue(safeBucket.lifecycle),
+    },
+    diagnostics: {
+      ...emptyBucket.diagnostics,
+      ...getObjectValue(safeBucket.diagnostics),
     },
   };
 }
@@ -248,6 +261,26 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
         ...baseParams,
         install_count: normalizedBucket.lifecycle.installCount,
         update_count: normalizedBucket.lifecycle.updateCount,
+      },
+    });
+  }
+
+  if (
+    normalizedBucket.diagnostics.optInCount ||
+    normalizedBucket.diagnostics.optOutCount ||
+    normalizedBucket.diagnostics.shareCount ||
+    normalizedBucket.diagnostics.autoShareCount ||
+    normalizedBucket.diagnostics.shareFailureCount
+  ) {
+    events.push({
+      name: 'daily_diagnostics_usage',
+      params: {
+        ...baseParams,
+        opt_in_count: normalizedBucket.diagnostics.optInCount,
+        opt_out_count: normalizedBucket.diagnostics.optOutCount,
+        share_count: normalizedBucket.diagnostics.shareCount,
+        auto_share_count: normalizedBucket.diagnostics.autoShareCount,
+        share_failure_count: normalizedBucket.diagnostics.shareFailureCount,
       },
     });
   }
@@ -433,6 +466,22 @@ async function recordAnalyticsEvent(eventName, params = {}) {
     case 'diagnostic_copied':
       bucket.popup.diagnosticCopyCount += 1;
       break;
+    case 'diagnostics_opt_in_changed':
+      if (params.enabled) {
+        bucket.diagnostics.optInCount += 1;
+      } else {
+        bucket.diagnostics.optOutCount += 1;
+      }
+      break;
+    case 'diagnostic_shared':
+      bucket.diagnostics.shareCount += 1;
+      if (params.automatic) {
+        bucket.diagnostics.autoShareCount += 1;
+      }
+      break;
+    case 'diagnostic_share_failed':
+      bucket.diagnostics.shareFailureCount += 1;
+      break;
     case 'volume_changed':
       bucket.popup.volumeChangeCount += 1;
       incrementCounter(bucket.volumeBuckets, getVolumeBucket(params.volumePercent));
@@ -496,6 +545,29 @@ async function recordProfileUsageDelta(profileDeltas = {}) {
   }
 }
 
+async function uploadDiagnosticReport(report, options = {}) {
+  if (!isDiagnosticUploadConfigured()) {
+    throw new Error('Diagnostic upload endpoint is not configured');
+  }
+
+  const response = await fetch(DIAGNOSTICS_CONFIG.endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      source: 'keyboard-asmr-extension',
+      automatic: Boolean(options.automatic),
+      sentAt: new Date().toISOString(),
+      report,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Diagnostic upload failed: HTTP ${response.status}`);
+  }
+}
+
 // Listen for popup state changes
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === MESSAGE_TYPES.TOGGLE_MUTE) {
@@ -514,6 +586,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === MESSAGE_TYPES.ANALYTICS_PROFILE_USAGE_DELTA) {
     enqueueAnalyticsUpdate(() => recordProfileUsageDelta(message.profileDeltas));
     sendResponse?.({ ok: true });
+    return;
+  }
+
+  if (message.type === MESSAGE_TYPES.DIAGNOSTIC_REPORT_UPLOAD) {
+    uploadDiagnosticReport(message.report, { automatic: message.automatic })
+      .then(() => {
+        sendResponse?.({ ok: true });
+      })
+      .catch(error => {
+        console.warn('Keyboard ASMR: diagnostic upload failed', error);
+        sendResponse?.({
+          ok: false,
+          error: error.message || 'diagnostic_upload_failed',
+        });
+      });
+    return true;
   }
 });
 
