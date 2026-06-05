@@ -19,7 +19,8 @@
 - [x] Add install/update guidance: refresh existing tabs; unsupported on Chrome Web Store, chrome:// pages, and address bar.
 - [x] Add compatibility test pages for input, textarea, contenteditable, same-origin iframe, cross-origin iframe, and editor-like surfaces.
 - [x] Add endpoint-gated opt-in diagnostic report upload with manual share and auto-share on failure after opt-in.
-- [ ] Configure diagnostic report endpoint and final privacy disclosure before enabling uploads in release builds.
+- [x] Draft Chrome Web Store privacy disclosure and release gate checklist.
+- [ ] Configure diagnostic report endpoint and apply final Chrome Web Store privacy disclosure before enabling uploads in release builds.
 
 ## Phase 2: Performance
 
@@ -39,8 +40,9 @@
 - [x] Track install/update, popup open, profile select, preview play, mute toggle, volume bucket, status result, diagnostic copy, and first sound success.
 - [x] Track error classes only, not typed keys, typed text, raw page URLs, or browsing history.
 - [x] Add a privacy note in popup/settings before enabling diagnostic upload.
-- [ ] Add final Chrome Web Store privacy disclosure before enabling diagnostic upload or analytics in release builds.
-- [ ] Create GA dashboards for activation, profile demand, reliability failure rate, retention, and conversion intent.
+- [x] Draft final Chrome Web Store privacy disclosure before enabling diagnostic upload or analytics in release builds.
+- [x] Create GA dashboard setup guide for activation, profile demand, reliability failure rate, retention, and conversion intent.
+- [ ] Apply Chrome Web Store privacy disclosure and create the GA4 reports in the external dashboards.
 
 ## Phase 4: Product Upgrades
 
@@ -70,4 +72,4 @@
 
 ## Current Next Step
 
-Next: add the privacy note and provide GA4 Measurement Protocol credentials for release builds if analytics should go live.
+Next: apply the Chrome Web Store privacy disclosure, create the GA4 reports, and provide release env vars only after those external steps are complete.
