@@ -1,0 +1,166 @@
+chrome_web_store_listing:
+  product_details:
+    language: "English"
+
+    title:
+      value: "Keyboard ASMR"
+      source: "package"
+
+    summary:
+      value: "Satisfy every keystroke — mechanical-keyboard clicks, typewriter tones & thocky ASMR that make typing addictive."
+      source: "package"
+
+    description: |-
+      Bring your typing to life with satisfying, realistic typing sounds!
+      Keyboard ASMR lets you pick from authentic mechanical keyboard switch sounds — from Holy Pandas and Banana Splits to Gateron Reds, MX Blues, and classic Typewriter clicks. Perfect for focus, flow, or just fun.
+
+      I’ve added some of my favorite keyboard sound profiles and am looking for more — suggest yours on Discord if you’ve got great ASMR typing samples!
+
+      💡 Profiles included
+      a. Tactile classics: Holy Panda, Gateron Black Ink, Gateron Red Ink
+      b. Clicky favorites: MX Blue, MX Brown, MX Speed Silver
+      c. Soft & thocky: Banana Split, Telios V2, Alpaca
+      d. Unique feels: Drum mode, iOS keyboard, Opera GX, Typewriter, New Typewriter
+
+      🛠️ Features
+      • Choose from preloaded mechanical keyboard, typewriter, and focus-sound profiles
+      • Lightweight, smooth, and easy to use
+      • Volume control, per-site mute option, and subtle white-noise-like ambience
+      • Light and dark themes available
+      • Manifest V3 compliant — built for performance and long-term support
+      • Tap the Discord button in the header to jump straight into our feedback channel →
+      https://discord.gg/2jcP6RBTPq
+
+      🧠 Getting Started
+      After install, hard-refresh any already-open tabs to activate the keyboard click sounds:
+        • Windows: Ctrl + Shift + R
+        • Mac: ⌘ + Shift + R
+
+      🔒 Limitations
+      a. Doesn’t run on restricted pages like the Chrome Web Store due to content-script rules
+      b. Doesn’t work in the address bar/omnibox by design
+
+      💬 Got ideas or found a bug?
+      Join our Discord to share feedback, suggest new sound packs, vote on upcoming typing sound profiles, report issues, and preview builds.
+      👉 https://discord.gg/2jcP6RBTPq
+
+      6.1.0 Changelog
+      - Key events added (Key down, Key up, Key pressed)
+      - Only Key down events kept active
+
+      6.1.1 Changelog
+      FIX: double-sound issue resolved for certain browsers
+
+    category: "Just for Fun"
+
+  graphic_assets:
+    store_icon:
+      required: true
+      size: "128x128"
+      uploaded: true
+      file: "TODO: store-icon-128.png"
+
+    global_promo_video:
+      uploaded: false
+      youtube_url: null
+
+    screenshots:
+      required: true
+      current_count: 4
+      max_count: 5
+      accepted_sizes:
+        - "1280x800"
+        - "640x400"
+      format: "JPEG or 24-bit PNG, no alpha"
+      files:
+        - "TODO: screenshot-1.png"
+        - "TODO: screenshot-2.png"
+        - "TODO: screenshot-3.png"
+        - "TODO: screenshot-4.png"
+
+    small_promo_tile:
+      uploaded: false
+      size: "440x280"
+      format: "JPEG or 24-bit PNG, no alpha"
+      file: null
+
+    marquee_promo_tile:
+      uploaded: false
+      size: "1400x560"
+      format: "JPEG or 24-bit PNG, no alpha"
+      file: null
+
+  additional_fields:
+    official_url:
+      selected: "None"
+      homepage_url: null
+      support_url: null
+
+    mature_content:
+      enabled: false
+
+  additional_metrics:
+    google_analytics_4:
+      enabled: true
+      visible_actions:
+        - "Opt out of Google Analytics"
+        - "Go to Google Analytics"
+      note: "GA4 is connected/enabled in the listing UI; exact property/measurement ID is not visible in screenshot."
+
+  privacy:
+    single_purpose_description: "An extension for serving your keyboard ASMR needs"
+
+    permissions:
+      storage:
+        justification: "To work with multiple sound files and user preference store"
+
+      host_permissions:
+        justification: "Just active tab nothing else"
+        review_warning_visible: true
+        review_warning: "Due to the Host Permission, your extension may require an in-depth review which will delay publishing."
+
+    remote_code:
+      uses_remote_code: false
+      selected_option: "No, I am not using remote code"
+      justification: null
+
+    data_usage:
+      planned_user_data_collection:
+        personally_identifiable_information: false
+        health_information: false
+        financial_and_payment_information: false
+        authentication_information: false
+        personal_communications: false
+        location: false
+        web_history: false
+        user_activity: false
+        website_content: false
+
+    certifications:
+      does_not_sell_or_transfer_user_data_to_third_parties_outside_approved_use_cases: true
+      does_not_use_or_transfer_user_data_for_unrelated_purposes: true
+      does_not_use_or_transfer_user_data_for_creditworthiness_or_lending: true
+
+    privacy_policy:
+      required: true
+      url: null
+      status: "missing"
+
+  distribution:
+    payments:
+      type: "free_of_charge"
+      contains_in_app_purchases: false
+
+    visibility:
+      type: "public"
+      description: "Everyone in selected countries can see it"
+
+    regions:
+      all_regions: true
+      all_unlisted_regions: true
+      visible_selected_examples:
+        - "Albania"
+        - "Algeria"
+        - "American Samoa"
+        - "Angola"
+      note: "Full region list is not visible, but All regions is selected."

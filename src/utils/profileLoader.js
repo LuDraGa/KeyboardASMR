@@ -73,9 +73,10 @@ export const BUNDLED_PROFILE_FILE_BY_ID = {
  */
 
 class ProfileLoader {
-  constructor() {
+  constructor(options = {}) {
     this.loadedProfiles = new Map();
     this.audioCache = new Map();
+    this.bundledProfileSources = options.bundledProfileSources || null;
   }
 
   /**
@@ -86,7 +87,7 @@ class ProfileLoader {
 
     for (const filename of BUNDLED_PROFILE_FILES) {
       try {
-        const profile = await this.loadProfile(`sound_profiles/${filename}`);
+        const profile = await this.loadBundledProfileFile(filename);
         if (profile) {
           profiles.push(profile);
         }
@@ -107,6 +108,21 @@ class ProfileLoader {
       throw new Error(`Unknown bundled profile id: ${profileId}`);
     }
 
+    return await this.loadBundledProfileFile(filename);
+  }
+
+  async loadBundledProfileFile(filename) {
+    if (this.bundledProfileSources) {
+      try {
+        const yamlText = this.bundledProfileSources(`./${filename}`);
+        if (yamlText) {
+          return await this.loadProfileFromYaml(yamlText);
+        }
+      } catch (error) {
+        console.warn(`Failed to load embedded bundled profile ${filename}:`, error);
+      }
+    }
+
     return await this.loadProfile(`sound_profiles/${filename}`);
   }
 
@@ -121,16 +137,19 @@ class ProfileLoader {
       }
 
       const yamlText = await response.text();
-      const profileData = yaml.load(yamlText);
-
-      const validatedProfile = await this.validateProfile(profileData);
-      this.loadedProfiles.set(validatedProfile.id, validatedProfile);
-
-      return validatedProfile;
+      return await this.loadProfileFromYaml(yamlText);
     } catch (error) {
       console.error(`Error loading profile from ${profilePath}:`, error);
       return null;
     }
+  }
+
+  async loadProfileFromYaml(yamlText) {
+    const profileData = yaml.load(yamlText);
+    const validatedProfile = await this.validateProfile(profileData);
+    this.loadedProfiles.set(validatedProfile.id, validatedProfile);
+
+    return validatedProfile;
   }
 
   /**
