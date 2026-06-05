@@ -53,6 +53,7 @@ The hosted policy at `docs/release/privacy-policy.md` must contain each of these
 - "Key event analytics are counts only. Keyboard ASMR does not send which keys were pressed or what was typed."
 - "Diagnostic reports exclude typed text, raw key values, raw page URLs, browsing history, and website content."
 - "Keyboard ASMR does not sell user data."
+- "The use of information received from Google APIs will adhere to the Chrome Web Store User Data Policy, including the Limited Use requirements."
 - "Keyboard ASMR's use and transfer of user data complies with the Chrome Web Store User Data Policy, including the Limited Use requirements."
 
 ## Privacy Policy

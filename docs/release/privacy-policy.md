@@ -54,6 +54,8 @@ Removing the extension clears extension-local storage according to Chrome's exte
 
 ## Chrome Web Store Limited Use
 
+The use of information received from Google APIs will adhere to the Chrome Web Store User Data Policy, including the Limited Use requirements.
+
 Keyboard ASMR's use and transfer of user data complies with the Chrome Web Store User Data Policy, including the Limited Use requirements.
 
 ## Contact
