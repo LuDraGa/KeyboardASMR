@@ -7,6 +7,10 @@
     "type": "git",
     "url": ""
   },
+  "engines": {
+    "node": ">=22.16.0",
+    "npm": ">=10.9.0"
+  },
   "scripts": {
     "build": "node utils/build.js",
     "start": "node utils/webserver.js",
