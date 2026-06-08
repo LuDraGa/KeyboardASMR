@@ -250,14 +250,15 @@ async function handleGa4Request(request: Request, env: Env) {
     }),
   });
 
-  // Surface event names in Worker Logs so /ga4 lines are distinguishable.
-  // Names + count + forward status only — no raw body, client_id truncated.
+  // Surface event names + params in Worker Logs so /ga4 lines are distinguishable
+  // (e.g. which profile_id, the aggregate counts). Params are already sanitized to
+  // the GA4 allow-list — no raw body, no PII; client_id truncated to a fingerprint.
   console.log(
     'ga4_ingest',
     JSON.stringify({
       ray: request.headers.get('cf-ray'),
       client: typeof payload.client_id === 'string' ? payload.client_id.slice(0, 8) : null,
-      events: events.map((event) => event.name),
+      events: events.map((event) => ({ name: event.name, params: event.params })),
       forward: response.status,
     })
   );
