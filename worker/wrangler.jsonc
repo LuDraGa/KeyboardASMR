@@ -5,5 +5,13 @@
   "compatibility_date": "2026-06-05",
   "observability": {
     "enabled": true
+  },
+  // Plain-text vars live here so `wrangler deploy` is idempotent. Wrangler treats
+  // this block as the authoritative set of plain vars and wipes any dashboard-only
+  // plain var on every deploy — so the measurement ID MUST be declared here, not
+  // in the dashboard. GA4_API_SECRET stays a secret (`wrangler secret put`); never
+  // put it in vars.
+  "vars": {
+    "GA4_MEASUREMENT_ID": "G-S42K14ZJCY"
   }
 }

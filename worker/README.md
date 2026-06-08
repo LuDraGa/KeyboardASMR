@@ -6,14 +6,12 @@ This Worker keeps `GA4_API_SECRET` out of the Chrome extension bundle. The exten
 
 ## Cloudflare Settings
 
-Set these in Worker Settings > Variables & Secrets:
-
-- `GA4_MEASUREMENT_ID`: plain variable, for example `G-S42K14ZJCY`
-- `GA4_API_SECRET`: secret
+- `GA4_MEASUREMENT_ID`: declared in `wrangler.jsonc` under `vars` (for example `G-S42K14ZJCY`). **Do not** set this as a plain variable in the dashboard — `wrangler deploy` (run by Workers Builds on every push) treats the `vars` block in config as authoritative and wipes any dashboard-only plain variable. That is exactly how the measurement ID silently disappeared and `/ga4` started returning `500 ga4_not_configured`.
+- `GA4_API_SECRET`: secret only. Set via `wrangler secret put GA4_API_SECRET` or dashboard > Variables & Secrets > _Encrypt_. Secrets are a separate store that deploys never overwrite, so this one survives. Never put it in `vars`.
 
 Optional:
 
-- `ALLOWED_ORIGIN`: set after the Chrome extension ID is stable, for example `chrome-extension://<extension-id>`
+- `ALLOWED_ORIGIN`: lock down CORS once the Chrome extension ID is stable, for example `chrome-extension://<extension-id>`. Add it to the `vars` block in `wrangler.jsonc` (not the dashboard), same reasoning as above.
 
 ## GitHub Build Settings
 
