@@ -250,6 +250,18 @@ async function handleGa4Request(request: Request, env: Env) {
     }),
   });
 
+  // Surface event names in Worker Logs so /ga4 lines are distinguishable.
+  // Names + count + forward status only — no raw body, client_id truncated.
+  console.log(
+    'ga4_ingest',
+    JSON.stringify({
+      ray: request.headers.get('cf-ray'),
+      client: typeof payload.client_id === 'string' ? payload.client_id.slice(0, 8) : null,
+      events: events.map((event) => event.name),
+      forward: response.status,
+    })
+  );
+
   if (!response.ok) {
     return jsonResponse(
       request,
