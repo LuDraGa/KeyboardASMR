@@ -69,6 +69,7 @@ const runtimeStats = {
 };
 
 const pendingAnalyticsUsage = {};
+const pendingAnalyticsErrors = {};
 let pendingAnalyticsKeyEvents = 0;
 let analyticsFlushTimer = null;
 
@@ -77,6 +78,7 @@ function recordError(code, context = null) {
   runtimeStats.lastErrorCode = code;
   runtimeStats.lastErrorAt = new Date().toISOString();
   runtimeStats.lastErrorContext = context;
+  recordAnalyticsErrorDelta(code);
 }
 
 function recordKeyEvent(keyCategory = 'unknown') {
@@ -147,39 +149,85 @@ function restoreAnalyticsUsage(profileDeltas) {
   }
 }
 
+function recordAnalyticsErrorDelta(code, amount = 1) {
+  if (!code) return;
+  const count = Number(amount);
+  if (!Number.isFinite(count) || count <= 0) return;
+
+  pendingAnalyticsErrors[code] = (pendingAnalyticsErrors[code] || 0) + Math.floor(count);
+  queueAnalyticsUsageFlush();
+}
+
+function restoreAnalyticsErrors(errorDeltas) {
+  for (const [code, amount] of Object.entries(errorDeltas || {})) {
+    recordAnalyticsErrorDelta(code, amount);
+  }
+}
+
 function flushAnalyticsUsage() {
   if (analyticsFlushTimer) {
     clearTimeout(analyticsFlushTimer);
     analyticsFlushTimer = null;
   }
 
-  if (Object.keys(pendingAnalyticsUsage).length === 0) {
+  const hasProfileUsage = Object.keys(pendingAnalyticsUsage).length > 0;
+  const hasErrors = Object.keys(pendingAnalyticsErrors).length > 0;
+
+  if (!hasProfileUsage && !hasErrors) {
     return;
   }
 
-  const profileDeltas = {};
-  for (const [profileId, delta] of Object.entries(pendingAnalyticsUsage)) {
-    profileDeltas[profileId] = { ...delta };
-    delete pendingAnalyticsUsage[profileId];
-  }
-  pendingAnalyticsKeyEvents = 0;
+  if (hasProfileUsage) {
+    const profileDeltas = {};
+    for (const [profileId, delta] of Object.entries(pendingAnalyticsUsage)) {
+      profileDeltas[profileId] = { ...delta };
+      delete pendingAnalyticsUsage[profileId];
+    }
+    pendingAnalyticsKeyEvents = 0;
 
-  try {
-    chrome.runtime.sendMessage(
-      {
-        type: MESSAGE_TYPES.ANALYTICS_PROFILE_USAGE_DELTA,
-        profileDeltas,
-      },
-      () => {
-        if (chrome.runtime.lastError) {
-          restoreAnalyticsUsage(profileDeltas);
-          queueAnalyticsUsageFlush();
+    try {
+      chrome.runtime.sendMessage(
+        {
+          type: MESSAGE_TYPES.ANALYTICS_PROFILE_USAGE_DELTA,
+          profileDeltas,
+        },
+        () => {
+          if (chrome.runtime.lastError) {
+            restoreAnalyticsUsage(profileDeltas);
+            queueAnalyticsUsageFlush();
+          }
         }
-      }
-    );
-  } catch (error) {
-    restoreAnalyticsUsage(profileDeltas);
-    queueAnalyticsUsageFlush();
+      );
+    } catch (error) {
+      restoreAnalyticsUsage(profileDeltas);
+      queueAnalyticsUsageFlush();
+    }
+  }
+
+  if (hasErrors) {
+    const errorDeltas = {};
+    for (const [code, count] of Object.entries(pendingAnalyticsErrors)) {
+      errorDeltas[code] = count;
+      delete pendingAnalyticsErrors[code];
+    }
+
+    try {
+      chrome.runtime.sendMessage(
+        {
+          type: MESSAGE_TYPES.ANALYTICS_ERROR_DELTA,
+          errorDeltas,
+        },
+        () => {
+          if (chrome.runtime.lastError) {
+            restoreAnalyticsErrors(errorDeltas);
+            queueAnalyticsUsageFlush();
+          }
+        }
+      );
+    } catch (error) {
+      restoreAnalyticsErrors(errorDeltas);
+      queueAnalyticsUsageFlush();
+    }
   }
 }
 

@@ -7,6 +7,7 @@ import {
   isDiagnosticUploadConfigured,
 } from '../../shared/config';
 import { ANALYTICS_CONFIG, isAnalyticsConfigured } from '../../shared/analyticsConfig';
+import { aggregateRuntimeErrorDeltas } from '../../shared/statusTelemetry';
 
 console.log('Background service worker initialized');
 
@@ -95,6 +96,7 @@ function getEmptyDailyBucket() {
     statusReasons: {},
     captureModes: {},
     compatibilityModes: {},
+    statusErrorClasses: {},
     errors: {},
     volumeBuckets: {},
     firstSoundLatencyBuckets: {},
@@ -144,6 +146,7 @@ function normalizeDailyBucket(bucket = {}) {
     statusReasons: getObjectValue(safeBucket.statusReasons),
     captureModes: getObjectValue(safeBucket.captureModes),
     compatibilityModes: getObjectValue(safeBucket.compatibilityModes),
+    statusErrorClasses: getObjectValue(safeBucket.statusErrorClasses),
     errors: getObjectValue(safeBucket.errors),
     volumeBuckets: getObjectValue(safeBucket.volumeBuckets),
     firstSoundLatencyBuckets: getObjectValue(safeBucket.firstSoundLatencyBuckets),
@@ -361,6 +364,17 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
     });
   }
 
+  for (const [statusErrorClass, count] of Object.entries(normalizedBucket.statusErrorClasses)) {
+    events.push({
+      name: 'daily_status_error_class',
+      params: {
+        ...baseParams,
+        status_error_class: toAnalyticsDimension(statusErrorClass),
+        status_error_observation_count: toAnalyticsMetric(count),
+      },
+    });
+  }
+
   for (const [errorClass, count] of Object.entries(normalizedBucket.errors)) {
     events.push({
       name: 'daily_error_class',
@@ -512,8 +526,8 @@ async function recordAnalyticsEvent(eventName, params = {}) {
         : []) {
         incrementCounter(bucket.compatibilityModes, mode);
       }
-      if (params.errorClass) {
-        incrementCounter(bucket.errors, params.errorClass);
+      if (params.statusErrorClass) {
+        incrementCounter(bucket.statusErrorClasses, params.statusErrorClass);
       }
       if (params.firstSoundLatencyMs !== undefined && params.firstSoundLatencyMs !== null) {
         incrementCounter(
@@ -532,6 +546,27 @@ async function recordAnalyticsEvent(eventName, params = {}) {
       break;
     default:
       break;
+  }
+
+  pruneOldBuckets(state);
+  await setAnalyticsState(state, lastFlushDate);
+
+  if (isAnalyticsConfigured() && lastFlushDate !== getLocalDateKey()) {
+    await flushDueAnalyticsBuckets();
+  }
+}
+
+async function recordAnalyticsErrorDelta(errorDeltas = {}) {
+  const aggregatedDeltas = aggregateRuntimeErrorDeltas(errorDeltas);
+  if (Object.keys(aggregatedDeltas).length === 0) {
+    return;
+  }
+
+  const { state, lastFlushDate } = await getAnalyticsState();
+  const bucket = getDailyBucket(state);
+
+  for (const [errorClass, count] of Object.entries(aggregatedDeltas)) {
+    incrementCounter(bucket.errors, errorClass, count);
   }
 
   pruneOldBuckets(state);
@@ -602,6 +637,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === MESSAGE_TYPES.ANALYTICS_PROFILE_USAGE_DELTA) {
     enqueueAnalyticsUpdate(() => recordProfileUsageDelta(message.profileDeltas));
+    sendResponse?.({ ok: true });
+    return;
+  }
+
+  if (message.type === MESSAGE_TYPES.ANALYTICS_ERROR_DELTA) {
+    enqueueAnalyticsUpdate(() => recordAnalyticsErrorDelta(message.errorDeltas));
     sendResponse?.({ ok: true });
     return;
   }
