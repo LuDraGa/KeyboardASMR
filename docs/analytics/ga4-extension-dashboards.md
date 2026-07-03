@@ -42,7 +42,8 @@ Do not rename these event parameters; GA4 custom definitions are tied to the exa
 | Status reason      | `status_reason`      |
 | Capture mode       | `capture_mode`       |
 | Compatibility mode | `compatibility_mode` |
-| Error class        | `error_class`        |
+| Status error class | `status_error_class` |
+| Runtime error class | `error_class`        |
 | Volume bucket      | `volume_bucket`      |
 | Latency bucket     | `latency_bucket`     |
 
@@ -70,7 +71,8 @@ Metrics must be sent as numeric count parameters, not strings.
 | Status count                   | `status_count`              | Standard |
 | Reason count                   | `reason_count`              | Standard |
 | Mode count                     | `mode_count`                | Standard |
-| Error count                    | `error_count`               | Standard |
+| Status error observation count | `status_error_observation_count` | Standard |
+| Runtime error count            | `error_count`                    | Standard |
 | Volume count                   | `volume_count`              | Standard |
 | Latency count                  | `latency_count`             | Standard |
 | Diagnostic opt-in count        | `opt_in_count`              | Standard |
@@ -151,6 +153,7 @@ Rows:
 
 - `status_state`
 - `status_reason`
+- `status_error_class`
 - `error_class`
 - `capture_mode`
 - `compatibility_mode`
@@ -159,17 +162,22 @@ Metrics:
 
 - `status_count`
 - `reason_count`
+- `status_error_observation_count`
 - `error_count`
 - `mode_count`
 
 Filters:
 
-- Event name exactly matches `daily_status_result`, `daily_status_reason`, `daily_error_class`, `daily_capture_mode`, or `daily_compatibility_mode`.
+- Event name exactly matches `daily_status_result`, `daily_status_reason`, `daily_status_error_class`, `daily_error_class`, `daily_capture_mode`, or `daily_compatibility_mode`.
 
 Read:
 
-- `content_script_unavailable` usually means refresh-needed, unsupported page, or install/update tab state.
-- `profile_load_failed`, `sound_fetch_failed`, or `sound_decode_failed` points to bundled asset/profile problems.
+- `status_reason` is the concrete popup observation, such as `content_script_unavailable` or `profile_unavailable`.
+- `status_error_class` is a broader grouping for popup observations. For example, `content_script_unavailable` maps to `content_script`, and tab lookup failures map to `tab_access`.
+- `status_error_observation_count` counts popup status checks in each class. It is useful for reliability triage, but it is not a runtime error occurrence count.
+- `error_class` is emitted from content-script runtime error deltas only. `error_count` counts real runtime error occurrences grouped into stable classes such as `audio`, `asset`, `profile`, and `playback`.
+- `content_script_unavailable` does not create a runtime `error_class` by itself because there is no reachable content script to report runtime counters. Use `status_error_class=content_script` for that path.
+- `profile_load_failed`, `sound_fetch_failed`, or `sound_decode_failed` contribute to runtime error classes when the content script records those errors.
 - A high fallback mode share means compatibility code is doing useful work on difficult editors.
 
 ### Retention

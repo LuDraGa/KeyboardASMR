@@ -7,6 +7,7 @@ import {
   isDiagnosticUploadConfigured,
   resolveSoundSetId,
 } from '../../shared/config';
+import { getStatusErrorClass } from '../../shared/statusTelemetry';
 import { profileLoader } from '../../utils/profileLoader';
 
 const VOLUME_WRITE_DELAY = 250;
@@ -73,6 +74,7 @@ const getStatusFromReport = report => {
       state: 'muted',
       title: 'Muted',
       message: 'Turn sound on to test playback.',
+      reason: 'muted',
       report,
     };
   }
@@ -82,6 +84,7 @@ const getStatusFromReport = report => {
       state: 'checking',
       title: 'Audio loading',
       message: 'Press a key or check again in a moment.',
+      reason: 'audio_initializing',
       report,
     };
   }
@@ -91,6 +94,7 @@ const getStatusFromReport = report => {
       state: 'attention',
       title: 'Profile issue',
       message: 'Switch profiles or refresh this tab.',
+      reason: 'profile_unavailable',
       report,
     };
   }
@@ -100,6 +104,7 @@ const getStatusFromReport = report => {
       state: 'ready',
       title: 'Compatibility mode',
       message: 'Typing should play on this tab.',
+      reason: 'fallback_capture',
       report,
     };
   }
@@ -108,6 +113,7 @@ const getStatusFromReport = report => {
     state: 'ready',
     title: 'Ready',
     message: 'Typing should play on this tab.',
+    reason: 'none',
     report,
   };
 };
@@ -196,6 +202,13 @@ const recordAnalyticsEvent = (eventName, params = {}) => {
   }
 };
 
+const recordStatusResult = ({ report, ...params }) => {
+  recordAnalyticsEvent('status_result', {
+    ...params,
+    statusErrorClass: getStatusErrorClass({ ...params, report }),
+  });
+};
+
 const Popup = () => {
   const [soundSet, setSoundSet] = useState(DEFAULT_SETTINGS.soundSet);
   const [volume, setVolume] = useState(DEFAULT_SETTINGS.volume * 100);
@@ -244,7 +257,7 @@ const Popup = () => {
 
     if (!chrome.tabs?.query) {
       setTabStatus(createDisconnectedStatus('tabs_api_unavailable', { tabsApiAvailable: false }));
-      recordAnalyticsEvent('status_result', {
+      recordStatusResult({
         statusState: 'disconnected',
         reason: 'tabs_api_unavailable',
         captureMode: 'none',
@@ -259,7 +272,7 @@ const Popup = () => {
             lastErrorMessage: chrome.runtime.lastError.message,
           })
         );
-        recordAnalyticsEvent('status_result', {
+        recordStatusResult({
           statusState: 'disconnected',
           reason: 'active_tab_query_failed',
           captureMode: 'none',
@@ -270,7 +283,7 @@ const Popup = () => {
       const activeTab = tabs?.[0];
       if (!activeTab?.id) {
         setTabStatus(createDisconnectedStatus('active_tab_missing', getTabContext(activeTab)));
-        recordAnalyticsEvent('status_result', {
+        recordStatusResult({
           statusState: 'disconnected',
           reason: 'active_tab_missing',
           captureMode: 'none',
@@ -286,7 +299,7 @@ const Popup = () => {
               lastErrorMessage: chrome.runtime.lastError?.message || 'no_status_response',
             })
           );
-          recordAnalyticsEvent('status_result', {
+          recordStatusResult({
             statusState: 'disconnected',
             reason: 'content_script_unavailable',
             captureMode: 'none',
@@ -296,13 +309,13 @@ const Popup = () => {
 
         const status = getStatusFromReport(response);
         setTabStatus(status);
-        recordAnalyticsEvent('status_result', {
+        recordStatusResult({
           statusState: status.state,
-          reason: response.stats?.lastErrorCode || 'none',
+          reason: status.reason || 'none',
           captureMode: response.captureMode || 'unknown',
           compatibilityModes: response.compatibilityModes || [],
-          errorClass: response.stats?.lastErrorCode || null,
           firstSoundLatencyMs: response.stats?.firstSoundLatencyMs ?? null,
+          report: response,
         });
       });
     });
