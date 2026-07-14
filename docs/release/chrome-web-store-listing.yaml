@@ -152,7 +152,7 @@ chrome_web_store_listing:
         website_content: false
 
       disclosure_notes:
-        - "User activity is limited to aggregate extension interactions, selected profile usage, status events, playback/error counts, and daily per-profile key event counts."
+        - "User activity is limited to aggregate extension interactions, selected profile usage, status events, playback outcome counts, muted/unmapped event counts, exact volume and mute-state analytics, and daily per-profile key event counts."
         - "Device or other IDs are limited to an anonymous analytics client ID stored in chrome.storage.local when GA4 Measurement Protocol is configured."
         - "Diagnostic reports are opt-in and may include user agent, platform, language, extension version, selected profile, mute/volume settings, local audio/profile status, compatibility mode, error codes, timing buckets, and category-level key counters."
         - "The extension does not collect typed text, raw key values, passwords, form contents, raw URLs, browsing history, website content, location, payment information, health information, authentication information, or personal communications."

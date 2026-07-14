@@ -1,6 +1,6 @@
 # Keyboard ASMR Privacy Policy
 
-Last updated: June 5, 2026
+Last updated: July 14, 2026
 
 Keyboard ASMR plays customizable keyboard sound effects in your browser.
 
@@ -18,7 +18,7 @@ These settings are stored with Chrome extension storage APIs.
 
 If analytics is enabled in a release build, Keyboard ASMR collects privacy-safe aggregate usage data to understand reliability and product usage.
 
-This may include extension install/update events, popup opens, selected sound profile, profile preview and selection counts, daily per-profile key event counts, sound playback counts, dropped sound counts, error classes, compatibility modes, volume buckets, first-sound latency buckets, and diagnostic/report actions.
+This may include extension install/update events, popup opens, selected sound profile, profile preview and selection counts, daily per-profile key event counts, successful playback counts, eligible playback attempt and failure counts, intentionally unmapped event counts, key event counts while muted, error classes, compatibility modes, exact 0-100 volume settings and selections, mute-state changes, first-sound latency buckets, and diagnostic/report actions.
 
 Key event analytics are counts only. Keyboard ASMR does not send which keys were pressed or what was typed.
 

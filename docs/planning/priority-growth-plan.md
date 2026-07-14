@@ -37,7 +37,8 @@
 - [ ] Confirm whether the dashboard-created GA4 property exposes a Measurement Protocol API secret for in-extension events.
 - [x] Implement config-gated GA4 Measurement Protocol with an anonymous client id in `chrome.storage.local`.
 - [x] Aggregate profile changes and per-profile usage counts locally, then flush at most once per day.
-- [x] Track install/update, popup open, profile select, preview play, mute toggle, volume bucket, status result, diagnostic copy, and first sound success.
+- [x] Track install/update, popup open, profile select, preview play, mute state, exact active/selected volume, status result, diagnostic copy, and first sound success.
+- [x] Separate eligible playback attempts/failures from intentionally unmapped and muted key events.
 - [x] Track error classes only, not typed keys, typed text, raw page URLs, or browsing history.
 - [x] Add a privacy note in popup/settings before enabling diagnostic upload.
 - [x] Draft final Chrome Web Store privacy disclosure before enabling diagnostic upload or analytics in release builds.

@@ -6,6 +6,11 @@ import {
   STORAGE_KEYS,
   isDiagnosticUploadConfigured,
 } from '../../shared/config';
+import {
+  getMuteState,
+  normalizeVolumePercent,
+  selectLatestActiveVolume,
+} from '../../shared/analyticsValues';
 import { ANALYTICS_CONFIG, isAnalyticsConfigured } from '../../shared/analyticsConfig';
 
 console.log('Background service worker initialized');
@@ -30,16 +35,6 @@ function updateExtensionState() {
 
 function getLocalDateKey(timestamp = Date.now()) {
   return new Date(timestamp).toISOString().slice(0, 10);
-}
-
-function getVolumeBucket(volumePercent) {
-  const volume = Number(volumePercent);
-  if (!Number.isFinite(volume)) return 'unknown';
-  if (volume === 0) return '0';
-  if (volume <= 25) return '1_25';
-  if (volume <= 50) return '26_50';
-  if (volume <= 75) return '51_75';
-  return '76_100';
 }
 
 function getLatencyBucket(latencyMs) {
@@ -75,8 +70,12 @@ function getEmptyProfileBucket() {
     previewedCount: 0,
     keyEventCount: 0,
     playedSoundCount: 0,
-    droppedSoundCount: 0,
+    playbackAttemptCount: 0,
+    playbackFailureCount: 0,
+    mutedKeyEventCount: 0,
+    unmappedEventCount: 0,
     firstSoundSuccessCount: 0,
+    activeVolume: null,
   };
 }
 
@@ -96,7 +95,8 @@ function getEmptyDailyBucket() {
     captureModes: {},
     compatibilityModes: {},
     errors: {},
-    volumeBuckets: {},
+    volumeSelections: {},
+    muteStateChanges: {},
     firstSoundLatencyBuckets: {},
     lifecycle: {
       installCount: 0,
@@ -145,7 +145,8 @@ function normalizeDailyBucket(bucket = {}) {
     captureModes: getObjectValue(safeBucket.captureModes),
     compatibilityModes: getObjectValue(safeBucket.compatibilityModes),
     errors: getObjectValue(safeBucket.errors),
-    volumeBuckets: getObjectValue(safeBucket.volumeBuckets),
+    volumeSelections: getObjectValue(safeBucket.volumeSelections),
+    muteStateChanges: getObjectValue(safeBucket.muteStateChanges),
     firstSoundLatencyBuckets: getObjectValue(safeBucket.firstSoundLatencyBuckets),
     lifecycle: {
       ...emptyBucket.lifecycle,
@@ -302,6 +303,7 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
   }
 
   for (const [profileId, profileStats] of Object.entries(normalizedBucket.profiles)) {
+    const activeVolume = selectLatestActiveVolume(null, profileStats.activeVolume);
     events.push({
       name: 'daily_profile_usage',
       params: {
@@ -311,8 +313,17 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
         previewed_count: toAnalyticsMetric(profileStats.previewedCount),
         key_event_count: toAnalyticsMetric(profileStats.keyEventCount),
         played_sound_count: toAnalyticsMetric(profileStats.playedSoundCount),
-        dropped_sound_count: toAnalyticsMetric(profileStats.droppedSoundCount),
+        playback_attempt_count: toAnalyticsMetric(profileStats.playbackAttemptCount),
+        playback_failure_count: toAnalyticsMetric(profileStats.playbackFailureCount),
+        muted_key_event_count: toAnalyticsMetric(profileStats.mutedKeyEventCount),
+        unmapped_event_count: toAnalyticsMetric(profileStats.unmappedEventCount),
         first_sound_success_count: toAnalyticsMetric(profileStats.firstSoundSuccessCount),
+        ...(activeVolume
+          ? {
+              volume_percent: toAnalyticsDimension(activeVolume.volumePercent),
+              active_volume_count: 1,
+            }
+          : {}),
       },
     });
   }
@@ -372,13 +383,24 @@ function buildAnalyticsEventsForDate(dateKey, bucket) {
     });
   }
 
-  for (const [volumeBucket, count] of Object.entries(normalizedBucket.volumeBuckets)) {
+  for (const [volumePercent, count] of Object.entries(normalizedBucket.volumeSelections)) {
     events.push({
-      name: 'daily_volume_bucket',
+      name: 'daily_volume_selection',
       params: {
         ...baseParams,
-        volume_bucket: toAnalyticsDimension(volumeBucket),
-        volume_count: toAnalyticsMetric(count),
+        volume_percent: toAnalyticsDimension(volumePercent),
+        volume_selection_count: toAnalyticsMetric(count),
+      },
+    });
+  }
+
+  for (const [muteState, count] of Object.entries(normalizedBucket.muteStateChanges)) {
+    events.push({
+      name: 'daily_mute_state_change',
+      params: {
+        ...baseParams,
+        mute_state: toAnalyticsDimension(muteState),
+        mute_state_change_count: toAnalyticsMetric(count),
       },
     });
   }
@@ -479,6 +501,7 @@ async function recordAnalyticsEvent(eventName, params = {}) {
       break;
     case 'mute_toggled':
       bucket.popup.muteToggleCount += 1;
+      incrementCounter(bucket.muteStateChanges, getMuteState(Boolean(params.muted)));
       break;
     case 'diagnostic_copied':
       bucket.popup.diagnosticCopyCount += 1;
@@ -501,7 +524,12 @@ async function recordAnalyticsEvent(eventName, params = {}) {
       break;
     case 'volume_changed':
       bucket.popup.volumeChangeCount += 1;
-      incrementCounter(bucket.volumeBuckets, getVolumeBucket(params.volumePercent));
+      {
+        const volumePercent = normalizeVolumePercent(params.volumePercent);
+        if (volumePercent !== null) {
+          incrementCounter(bucket.volumeSelections, String(volumePercent));
+        }
+      }
       break;
     case 'status_result':
       incrementCounter(bucket.statuses, params.statusState || 'unknown');
@@ -550,8 +578,15 @@ async function recordProfileUsageDelta(profileDeltas = {}) {
     const profileBucket = getProfileBucket(bucket, profileId);
     profileBucket.keyEventCount += toAnalyticsMetric(delta.keyEventCount);
     profileBucket.playedSoundCount += toAnalyticsMetric(delta.playedSoundCount);
-    profileBucket.droppedSoundCount += toAnalyticsMetric(delta.droppedSoundCount);
+    profileBucket.playbackAttemptCount += toAnalyticsMetric(delta.playbackAttemptCount);
+    profileBucket.playbackFailureCount += toAnalyticsMetric(delta.playbackFailureCount);
+    profileBucket.mutedKeyEventCount += toAnalyticsMetric(delta.mutedKeyEventCount);
+    profileBucket.unmappedEventCount += toAnalyticsMetric(delta.unmappedEventCount);
     profileBucket.firstSoundSuccessCount += toAnalyticsMetric(delta.firstSoundSuccessCount);
+    profileBucket.activeVolume = selectLatestActiveVolume(
+      profileBucket.activeVolume,
+      delta.activeVolume
+    );
   }
 
   pruneOldBuckets(state);
