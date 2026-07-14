@@ -21,7 +21,7 @@ In the Developer Dashboard, open the item and update Privacy practices before up
 
 Recommended disclosed data categories:
 
-- User activity: aggregate extension interactions, profile selection counts, popup/status events, daily per-profile key event counts, and support-report actions.
+- User activity: aggregate extension interactions, profile selection counts, popup/status events, daily per-profile playback outcome and key event counts, exact volume settings/selections, mute-state changes, and support-report actions.
 
 Recommended non-collection notes:
 

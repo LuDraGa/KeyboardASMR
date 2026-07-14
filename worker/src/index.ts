@@ -28,7 +28,8 @@ const ALLOWED_EVENT_NAMES = new Set([
   'daily_capture_mode',
   'daily_compatibility_mode',
   'daily_error_class',
-  'daily_volume_bucket',
+  'daily_volume_selection',
+  'daily_mute_state_change',
   'daily_first_sound_latency',
 ]);
 
@@ -40,7 +41,8 @@ const CUSTOM_DIMENSION_PARAM_KEYS = new Set([
   'capture_mode',
   'compatibility_mode',
   'error_class',
-  'volume_bucket',
+  'volume_percent',
+  'mute_state',
   'latency_bucket',
 ]);
 
@@ -62,13 +64,18 @@ const CUSTOM_METRIC_PARAM_KEYS = new Set([
   'previewed_count',
   'key_event_count',
   'played_sound_count',
-  'dropped_sound_count',
+  'playback_attempt_count',
+  'playback_failure_count',
+  'muted_key_event_count',
+  'unmapped_event_count',
   'first_sound_success_count',
+  'active_volume_count',
   'status_count',
   'reason_count',
   'mode_count',
   'error_count',
-  'volume_count',
+  'volume_selection_count',
+  'mute_state_change_count',
   'latency_count',
 ]);
 
@@ -258,7 +265,7 @@ async function handleGa4Request(request: Request, env: Env) {
     JSON.stringify({
       ray: request.headers.get('cf-ray'),
       client: typeof payload.client_id === 'string' ? payload.client_id.slice(0, 8) : null,
-      events: events.map((event) => ({ name: event.name, params: event.params })),
+      events: events.map(event => ({ name: event.name, params: event.params })),
       forward: response.status,
     })
   );

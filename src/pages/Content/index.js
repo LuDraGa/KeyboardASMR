@@ -4,7 +4,9 @@ import {
   STORAGE_KEYS,
   resolveSoundSetId,
 } from '../../shared/config';
+import { selectLatestActiveVolume } from '../../shared/analyticsValues';
 import { getKeyPlaybackInfo, getPlaybackCandidates } from '../../shared/keyCategories';
+import { loadPlaybackMappings, resolvePlaybackMapping } from '../../shared/playbackMapping';
 import { profileLoader } from '../../utils/profileLoader';
 
 // State management
@@ -45,8 +47,11 @@ const runtimeStats = {
   loadAttemptCount: 0,
   keyEventCount: 0,
   playedSoundCount: 0,
-  droppedSoundCount: 0,
-  droppedBeforeFirstSoundCount: 0,
+  playbackAttemptCount: 0,
+  playbackFailureCount: 0,
+  playbackFailuresBeforeFirstSoundCount: 0,
+  mutedKeyEventCount: 0,
+  unmappedEventCount: 0,
   firstSoundSuccessCount: 0,
   audioInitFailureCount: 0,
   audioResumeFailureCount: 0,
@@ -69,8 +74,17 @@ const runtimeStats = {
 };
 
 const pendingAnalyticsUsage = {};
-let pendingAnalyticsKeyEvents = 0;
+let pendingAnalyticsCapturedEvents = 0;
 let analyticsFlushTimer = null;
+const PROFILE_USAGE_COUNT_FIELDS = [
+  'keyEventCount',
+  'playedSoundCount',
+  'playbackAttemptCount',
+  'playbackFailureCount',
+  'mutedKeyEventCount',
+  'unmappedEventCount',
+  'firstSoundSuccessCount',
+];
 
 function recordError(code, context = null) {
   runtimeStats.errorCounts[code] = (runtimeStats.errorCounts[code] || 0) + 1;
@@ -97,13 +111,22 @@ function getUsageProfileId() {
   return activeSoundSet || currentSoundSet || 'unknown';
 }
 
-function getPendingProfileUsage(profileId = getUsageProfileId()) {
-  pendingAnalyticsUsage[profileId] ||= {
-    keyEventCount: 0,
-    playedSoundCount: 0,
-    droppedSoundCount: 0,
-    firstSoundSuccessCount: 0,
+function createEmptyProfileUsage() {
+  return {
+    ...Object.fromEntries(PROFILE_USAGE_COUNT_FIELDS.map(field => [field, 0])),
+    activeVolume: null,
   };
+}
+
+function mergeProfileUsage(target, delta) {
+  for (const field of PROFILE_USAGE_COUNT_FIELDS) {
+    target[field] += delta[field] || 0;
+  }
+  target.activeVolume = selectLatestActiveVolume(target.activeVolume, delta.activeVolume);
+}
+
+function getPendingProfileUsage(profileId = getUsageProfileId()) {
+  pendingAnalyticsUsage[profileId] ||= createEmptyProfileUsage();
   return pendingAnalyticsUsage[profileId];
 }
 
@@ -117,14 +140,11 @@ function queueAnalyticsUsageFlush() {
 
 function recordAnalyticsUsageDelta(delta) {
   const usage = getPendingProfileUsage();
-  usage.keyEventCount += delta.keyEventCount || 0;
-  usage.playedSoundCount += delta.playedSoundCount || 0;
-  usage.droppedSoundCount += delta.droppedSoundCount || 0;
-  usage.firstSoundSuccessCount += delta.firstSoundSuccessCount || 0;
+  mergeProfileUsage(usage, delta);
 
-  pendingAnalyticsKeyEvents += delta.keyEventCount || 0;
+  pendingAnalyticsCapturedEvents += (delta.keyEventCount || 0) + (delta.mutedKeyEventCount || 0);
 
-  if (pendingAnalyticsKeyEvents >= ANALYTICS_USAGE_CHECKPOINT_KEY_THRESHOLD) {
+  if (pendingAnalyticsCapturedEvents >= ANALYTICS_USAGE_CHECKPOINT_KEY_THRESHOLD) {
     flushAnalyticsUsage();
   } else {
     queueAnalyticsUsageFlush();
@@ -133,17 +153,9 @@ function recordAnalyticsUsageDelta(delta) {
 
 function restoreAnalyticsUsage(profileDeltas) {
   for (const [profileId, delta] of Object.entries(profileDeltas)) {
-    pendingAnalyticsUsage[profileId] ||= {
-      keyEventCount: 0,
-      playedSoundCount: 0,
-      droppedSoundCount: 0,
-      firstSoundSuccessCount: 0,
-    };
-    pendingAnalyticsUsage[profileId].keyEventCount += delta.keyEventCount || 0;
-    pendingAnalyticsUsage[profileId].playedSoundCount += delta.playedSoundCount || 0;
-    pendingAnalyticsUsage[profileId].droppedSoundCount += delta.droppedSoundCount || 0;
-    pendingAnalyticsUsage[profileId].firstSoundSuccessCount += delta.firstSoundSuccessCount || 0;
-    pendingAnalyticsKeyEvents += delta.keyEventCount || 0;
+    pendingAnalyticsUsage[profileId] ||= createEmptyProfileUsage();
+    mergeProfileUsage(pendingAnalyticsUsage[profileId], delta);
+    pendingAnalyticsCapturedEvents += (delta.keyEventCount || 0) + (delta.mutedKeyEventCount || 0);
   }
 }
 
@@ -162,7 +174,7 @@ function flushAnalyticsUsage() {
     profileDeltas[profileId] = { ...delta };
     delete pendingAnalyticsUsage[profileId];
   }
-  pendingAnalyticsKeyEvents = 0;
+  pendingAnalyticsCapturedEvents = 0;
 
   try {
     chrome.runtime.sendMessage(
@@ -183,14 +195,29 @@ function flushAnalyticsUsage() {
   }
 }
 
-function recordDroppedSound(reason) {
-  runtimeStats.droppedSoundCount += 1;
-  recordAnalyticsUsageDelta({ droppedSoundCount: 1 });
+function recordPlaybackAttempt() {
+  runtimeStats.playbackAttemptCount += 1;
+  recordAnalyticsUsageDelta({ playbackAttemptCount: 1 });
+}
+
+function recordPlaybackFailure(reason) {
+  runtimeStats.playbackFailureCount += 1;
+  recordAnalyticsUsageDelta({ playbackFailureCount: 1 });
 
   if (!runtimeStats.firstSoundAt) {
-    runtimeStats.droppedBeforeFirstSoundCount += 1;
+    runtimeStats.playbackFailuresBeforeFirstSoundCount += 1;
     runtimeStats.firstSoundFailureCode = runtimeStats.firstSoundFailureCode || reason;
   }
+}
+
+function recordMutedKeyEvent() {
+  runtimeStats.mutedKeyEventCount += 1;
+  recordAnalyticsUsageDelta({ mutedKeyEventCount: 1 });
+}
+
+function recordUnmappedEvent() {
+  runtimeStats.unmappedEventCount += 1;
+  recordAnalyticsUsageDelta({ unmappedEventCount: 1 });
 }
 
 function recordPlayedSound() {
@@ -199,6 +226,13 @@ function recordPlayedSound() {
 
   runtimeStats.playedSoundCount += 1;
   runtimeStats.lastSoundAt = timestamp;
+  recordAnalyticsUsageDelta({
+    playedSoundCount: 1,
+    activeVolume: {
+      volumePercent: Math.round(volume * 100),
+      usedAt: now,
+    },
+  });
 
   if (!runtimeStats.firstSoundAt) {
     runtimeStats.firstSoundAt = timestamp;
@@ -273,18 +307,26 @@ async function initAudio() {
 
 // Resume AudioContext on first user interaction
 async function ensureAudioContextResumed() {
-  if (!audioContext || audioContextResumed) return;
+  if (!audioContext) return false;
+  if (audioContext.state === 'running') {
+    audioContextResumed = true;
+    return true;
+  }
 
   try {
     if (audioContext.state === 'suspended') {
       await audioContext.resume();
     }
-    audioContextResumed = true;
-    console.log('Keyboard ASMR: AudioContext resumed');
+    audioContextResumed = audioContext.state === 'running';
+    if (audioContextResumed) {
+      console.log('Keyboard ASMR: AudioContext resumed');
+    }
+    return audioContextResumed;
   } catch (error) {
     runtimeStats.audioResumeFailureCount += 1;
     recordError('audio_resume_failed');
     console.error('Keyboard ASMR: Failed to resume AudioContext:', error);
+    return false;
   }
 }
 
@@ -348,32 +390,7 @@ async function buildProfileBuffers(soundSetId) {
   }
 
   const keyMappings = await profileLoader.profileToLegacyFormat(profile);
-  const profileBuffers = {};
-  let hasPlayableBuffer = false;
-
-  for (const [key, eventMappings] of Object.entries(keyMappings)) {
-    profileBuffers[key] = {};
-
-    for (const eventType of ['keydown', 'keyup', 'keypress']) {
-      const path = eventMappings[eventType];
-
-      if (path === null) {
-        profileBuffers[key][eventType] = null;
-      } else if (path) {
-        const decodedAudio = await loadSound(path);
-        profileBuffers[key][eventType] = decodedAudio;
-        hasPlayableBuffer = hasPlayableBuffer || Boolean(decodedAudio);
-      } else {
-        profileBuffers[key][eventType] = undefined;
-      }
-    }
-  }
-
-  if (!hasPlayableBuffer) {
-    throw new Error(`Profile has no playable sounds: ${soundSetId}`);
-  }
-
-  return profileBuffers;
+  return await loadPlaybackMappings(keyMappings, loadSound);
 }
 
 async function loadProfileBuffers(soundSetId) {
@@ -431,32 +448,34 @@ async function activateSoundSet(soundSetId) {
 
 // Play sound directly in content script
 async function playSound(playbackInfo, eventType = 'keydown') {
-  if (isMuted || !isAudioInitialized) return;
-
-  // Ensure AudioContext is resumed before playing
-  await ensureAudioContextResumed();
-
   const playbackSoundSet = activeSoundSet || currentSoundSet;
   const candidates = getPlaybackCandidates(playbackInfo);
-  let buffer;
+  const mapping = resolvePlaybackMapping(soundBuffers[playbackSoundSet], candidates, eventType);
 
-  for (const candidate of candidates) {
-    buffer = soundBuffers[playbackSoundSet]?.[candidate]?.[eventType];
-    if (buffer !== undefined) {
-      break;
-    }
+  if (mapping.status === 'profile_unavailable') {
+    recordError('profile_not_loaded', { profile: playbackSoundSet });
+    return;
   }
 
-  // If null (explicitly disabled) or still undefined, or no audioContext, return (no sound)
-  if (!buffer || !audioContext) {
-    const dropReason = !audioContext
-      ? 'audio_context_missing'
-      : !soundBuffers[playbackSoundSet]
-      ? 'profile_not_loaded'
-      : buffer === null
-      ? 'mapping_disabled'
-      : 'buffer_unavailable';
-    recordDroppedSound(dropReason);
+  if (mapping.status === 'unmapped') {
+    recordUnmappedEvent();
+    return;
+  }
+
+  recordPlaybackAttempt();
+
+  if (!mapping.buffer) {
+    recordPlaybackFailure('buffer_unavailable');
+    return;
+  }
+
+  if (!isAudioInitialized || !audioContext) {
+    recordPlaybackFailure(!audioContext ? 'audio_context_missing' : 'audio_not_initialized');
+    return;
+  }
+
+  if (!(await ensureAudioContextResumed())) {
+    recordPlaybackFailure('audio_context_not_running');
     return;
   }
 
@@ -464,20 +483,37 @@ async function playSound(playbackInfo, eventType = 'keydown') {
     const source = audioContext.createBufferSource();
     const gainNode = audioContext.createGain();
 
-    source.buffer = buffer;
+    source.buffer = mapping.buffer;
     gainNode.gain.value = volume;
 
     source.connect(gainNode);
     gainNode.connect(audioContext.destination);
 
     source.start(0);
-    recordAnalyticsUsageDelta({ playedSoundCount: 1 });
     recordPlayedSound();
   } catch (error) {
     runtimeStats.soundPlayFailureCount += 1;
     recordError('sound_play_failed');
+    recordPlaybackFailure('sound_play_failed');
     console.error('Keyboard ASMR: Error playing sound:', error);
   }
+}
+
+async function handleCapturedKeyEvent(playbackInfo, eventType) {
+  recordKeyEvent(playbackInfo.keyCategory);
+
+  if (isMuted) {
+    recordMutedKeyEvent();
+    return;
+  }
+
+  recordAnalyticsUsageDelta({ keyEventCount: 1 });
+
+  if (!isAudioInitialized) {
+    await initAudio();
+  }
+
+  await playSound(playbackInfo, eventType || 'keydown');
 }
 
 // Inject the keyboard capture script into the page
@@ -555,20 +591,7 @@ window.addEventListener('message', async event => {
       const playbackInfo = playbackKey
         ? { playbackKey, keyCategory, location }
         : getKeyPlaybackInfo(keyEventData);
-      recordKeyEvent(playbackInfo.keyCategory);
-      if (!isMuted) {
-        recordAnalyticsUsageDelta({ keyEventCount: 1 });
-      }
-
-      // Initialize audio on first keypress if needed
-      if (!isAudioInitialized) {
-        await initAudio();
-      }
-
-      // Play sound directly (only if not muted)
-      if (!isMuted) {
-        await playSound(playbackInfo, eventType || 'keydown'); // Default to keydown for backward compat
-      }
+      await handleCapturedKeyEvent(playbackInfo, eventType || 'keydown');
     }
   }
 });
@@ -625,35 +648,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Fallback keyboard event handlers (only used if injection fails)
 async function handleFallbackKeydown(event) {
-  if (isMuted) return;
-
   const playbackInfo = getKeyPlaybackInfo(event);
-  recordKeyEvent(playbackInfo.keyCategory);
-  recordAnalyticsUsageDelta({ keyEventCount: 1 });
-
-  // Initialize audio on first keypress if needed
-  if (!isAudioInitialized) {
-    await initAudio();
-  }
 
   // Determine event type based on repeat flag
   const eventType = event.repeat ? 'keypress' : 'keydown';
-  await playSound(playbackInfo, eventType);
+  await handleCapturedKeyEvent(playbackInfo, eventType);
 }
 
 async function handleFallbackKeyup(event) {
-  if (isMuted) return;
-
   const playbackInfo = getKeyPlaybackInfo(event);
-  recordKeyEvent(playbackInfo.keyCategory);
-  recordAnalyticsUsageDelta({ keyEventCount: 1 });
-
-  // Initialize audio if needed
-  if (!isAudioInitialized) {
-    await initAudio();
-  }
-
-  await playSound(playbackInfo, 'keyup');
+  await handleCapturedKeyEvent(playbackInfo, 'keyup');
 }
 
 // Enable fallback listeners only if injected script fails to load

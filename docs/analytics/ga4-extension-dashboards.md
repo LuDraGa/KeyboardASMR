@@ -43,7 +43,8 @@ Do not rename these event parameters; GA4 custom definitions are tied to the exa
 | Capture mode       | `capture_mode`       |
 | Compatibility mode | `compatibility_mode` |
 | Error class        | `error_class`        |
-| Volume bucket      | `volume_bucket`      |
+| Volume percent     | `volume_percent`     |
+| Mute state         | `mute_state`         |
 | Latency bucket     | `latency_bucket`     |
 
 ## Custom Metrics
@@ -65,13 +66,18 @@ Metrics must be sent as numeric count parameters, not strings.
 | Previewed count                | `previewed_count`           | Standard |
 | Key event count                | `key_event_count`           | Standard |
 | Played sound count             | `played_sound_count`        | Standard |
-| Dropped sound count            | `dropped_sound_count`       | Standard |
+| Playback attempt count         | `playback_attempt_count`    | Standard |
+| Playback failure count         | `playback_failure_count`    | Standard |
+| Muted key event count          | `muted_key_event_count`     | Standard |
+| Unmapped event count           | `unmapped_event_count`      | Standard |
 | First sound success count      | `first_sound_success_count` | Standard |
+| Active volume count            | `active_volume_count`       | Standard |
 | Status count                   | `status_count`              | Standard |
 | Reason count                   | `reason_count`              | Standard |
 | Mode count                     | `mode_count`                | Standard |
 | Error count                    | `error_count`               | Standard |
-| Volume count                   | `volume_count`              | Standard |
+| Volume selection count         | `volume_selection_count`    | Standard |
+| Mute state change count        | `mute_state_change_count`   | Standard |
 | Latency count                  | `latency_count`             | Standard |
 | Diagnostic opt-in count        | `opt_in_count`              | Standard |
 | Diagnostic opt-out count       | `opt_out_count`             | Standard |
@@ -80,6 +86,22 @@ Metrics must be sent as numeric count parameters, not strings.
 | Diagnostic share failure count | `share_failure_count`       | Standard |
 
 GA4 can take 24-48 hours after parameters arrive and definitions are created before these fields are available in reports.
+
+## Metric Migration
+
+Archive the old `Dropped sound count` custom metric (`dropped_sound_count`). It counted intentionally unmapped keyup and repeated-key events, so its historical values are not a reliability signal. Also archive the old `Volume bucket` dimension (`volume_bucket`) and `Volume count` metric (`volume_count`).
+
+GA4 cannot selectively delete the old dropped-sound values because data-deletion requests do not delete numeric parameters. Archiving a custom definition stops it from being used in new reports but preserves its historical data. Start corrected reliability and volume reports on the release date that first emits the new parameters.
+
+The corrected playback outcomes are:
+
+- `playback_attempt_count`: events whose selected profile declares a sound for the captured event type.
+- `played_sound_count`: declared sounds that started successfully.
+- `playback_failure_count`: declared sounds that could not start.
+- `unmapped_event_count`: intentionally silent event types, including profiles without keyup or repeated-key mappings.
+- `muted_key_event_count`: captured keys while the extension was muted.
+
+Muted and unmapped events are never playback attempts or failures.
 
 ## Reports To Build
 
@@ -100,7 +122,8 @@ Metrics:
 - `popup_open_count`
 - `first_sound_success_count`
 - `played_sound_count`
-- `dropped_sound_count`
+- `playback_attempt_count`
+- `playback_failure_count`
 
 Filters:
 
@@ -109,7 +132,7 @@ Filters:
 Useful calculated checks:
 
 - First sound success rate = `first_sound_success_count / popup_open_count`
-- Playback drop rate = `dropped_sound_count / (played_sound_count + dropped_sound_count)`
+- Playback failure rate = `playback_failure_count / playback_attempt_count`
 
 ### Profile Demand
 
@@ -149,6 +172,7 @@ Report type: Explore > Free form.
 
 Rows:
 
+- `profile_id`
 - `status_state`
 - `status_reason`
 - `error_class`
@@ -161,6 +185,10 @@ Metrics:
 - `reason_count`
 - `error_count`
 - `mode_count`
+- `playback_attempt_count`
+- `playback_failure_count`
+- `unmapped_event_count`
+- `muted_key_event_count`
 
 Filters:
 
@@ -171,6 +199,36 @@ Read:
 - `content_script_unavailable` usually means refresh-needed, unsupported page, or install/update tab state.
 - `profile_load_failed`, `sound_fetch_failed`, or `sound_decode_failed` points to bundled asset/profile problems.
 - A high fallback mode share means compatibility code is doing useful work on difficult editors.
+- Playback failure rate is `playback_failure_count / playback_attempt_count`; do not include muted or unmapped events in its denominator.
+- `unmapped_event_count` measures intentional profile coverage, while `muted_key_event_count` measures captured typing while disabled.
+
+### Volume And Mute
+
+Goal: understand exact listening levels and explicit mute behavior without conflating the two.
+
+Report type: Explore > Free form.
+
+Rows:
+
+- `volume_percent`
+- `mute_state`
+
+Metrics:
+
+- `active_volume_count`
+- `volume_selection_count`
+- `mute_state_change_count`
+- `muted_key_event_count`
+
+Filters:
+
+- Event name exactly matches `daily_profile_usage`, `daily_volume_selection`, or `daily_mute_state_change`.
+
+Read:
+
+- `volume_percent` on `daily_profile_usage` is the latest exact 0-100 volume used for successful playback in each daily profile bucket; `active_volume_count` makes that value countable as a distribution.
+- `volume_selection_count` counts deliberate final slider selections at each exact 0-100 value.
+- Volume zero remains a volume setting. `mute_state = muted` is tracked independently.
 
 ### Retention
 
@@ -234,4 +292,6 @@ Use this flow:
 - Chrome extension GA4 setup uses a Web data stream and Measurement Protocol: https://developer.chrome.com/docs/extensions/how-to/integrate/google-analytics-4
 - GA4 custom definitions are needed to report on event parameters: https://support.google.com/analytics/answer/14240153
 - GA4 custom metrics can take 24-48 hours before appearing in reports: https://support.google.com/analytics/answer/14239619
+- GA4 data-deletion requests do not delete numeric parameters: https://support.google.com/analytics/answer/9940393
+- Archiving custom dimensions or metrics preserves historical data: https://support.google.com/analytics/answer/12436143
 - GA4 detail reports can be customized from report data, filters, metrics, dimensions, and charts: https://support.google.com/analytics/answer/10445879

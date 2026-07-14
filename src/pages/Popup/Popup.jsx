@@ -8,6 +8,7 @@ import {
   resolveSoundSetId,
 } from '../../shared/config';
 import { profileLoader } from '../../utils/profileLoader';
+import { createVolumeSelectionController } from './volumeSelectionController';
 
 const VOLUME_WRITE_DELAY = 250;
 
@@ -210,9 +211,20 @@ const Popup = () => {
     report: null,
   });
   const [diagnosticsOptIn, setDiagnosticsOptIn] = useState(false);
-  const volumeWriteTimerRef = useRef(null);
-  const pendingVolumeRef = useRef(null);
+  const volumeSelectionControllerRef = useRef(null);
   const autoDiagnosticSignatureRef = useRef(null);
+
+  if (!volumeSelectionControllerRef.current) {
+    volumeSelectionControllerRef.current = createVolumeSelectionController({
+      delay: VOLUME_WRITE_DELAY,
+      persistVolume: nextVolume => {
+        chrome.storage.sync.set({ [STORAGE_KEYS.VOLUME]: nextVolume });
+      },
+      recordSelection: nextVolume => {
+        recordAnalyticsEvent('volume_changed', { volumePercent: nextVolume });
+      },
+    });
+  }
 
   // Audio context for sound preview
   const [audioContext, setAudioContext] = useState(null);
@@ -430,14 +442,7 @@ const Popup = () => {
 
   useEffect(() => {
     return () => {
-      if (volumeWriteTimerRef.current) {
-        clearTimeout(volumeWriteTimerRef.current);
-      }
-
-      if (pendingVolumeRef.current !== null) {
-        chrome.storage.sync.set({ [STORAGE_KEYS.VOLUME]: pendingVolumeRef.current });
-        recordAnalyticsEvent('volume_changed', { volumePercent: pendingVolumeRef.current });
-      }
+      volumeSelectionControllerRef.current?.dispose();
     };
   }, []);
 
@@ -462,31 +467,11 @@ const Popup = () => {
   const handleVolumeChange = event => {
     const newVolume = parseInt(event.target.value, 10);
     setVolume(newVolume);
-    pendingVolumeRef.current = newVolume;
-
-    if (volumeWriteTimerRef.current) {
-      clearTimeout(volumeWriteTimerRef.current);
-    }
-
-    volumeWriteTimerRef.current = setTimeout(() => {
-      chrome.storage.sync.set({ [STORAGE_KEYS.VOLUME]: newVolume });
-      recordAnalyticsEvent('volume_changed', { volumePercent: newVolume });
-      pendingVolumeRef.current = null;
-      volumeWriteTimerRef.current = null;
-    }, VOLUME_WRITE_DELAY);
+    volumeSelectionControllerRef.current.change(newVolume);
   };
 
   const flushVolumeChange = () => {
-    if (volumeWriteTimerRef.current) {
-      clearTimeout(volumeWriteTimerRef.current);
-      volumeWriteTimerRef.current = null;
-    }
-
-    if (pendingVolumeRef.current !== null) {
-      chrome.storage.sync.set({ [STORAGE_KEYS.VOLUME]: pendingVolumeRef.current });
-      recordAnalyticsEvent('volume_changed', { volumePercent: pendingVolumeRef.current });
-      pendingVolumeRef.current = null;
-    }
+    volumeSelectionControllerRef.current.commit();
   };
 
   const toggleMute = () => {
