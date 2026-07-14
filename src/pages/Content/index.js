@@ -6,7 +6,10 @@ import {
 } from '../../shared/config';
 import { selectLatestActiveVolume } from '../../shared/analyticsValues';
 import { getKeyPlaybackInfo, getPlaybackCandidates } from '../../shared/keyCategories';
-import { loadPlaybackMappings, resolvePlaybackMapping } from '../../shared/playbackMapping';
+import {
+  resolvePlaybackMapping,
+  startLoadingPlaybackMappings,
+} from '../../shared/playbackMapping';
 import { profileLoader } from '../../utils/profileLoader';
 
 // State management
@@ -245,8 +248,12 @@ function recordPlayedSound() {
 }
 
 function getContentStatus() {
-  const selectedProfileLoaded = Boolean(soundBuffers[currentSoundSet]);
-  const activeProfileLoaded = Boolean(activeSoundSet && soundBuffers[activeSoundSet]);
+  const selectedProfileLoaded = Boolean(
+    soundBuffers[currentSoundSet] && !loadingProfiles.has(currentSoundSet)
+  );
+  const activeProfileLoaded = Boolean(
+    activeSoundSet && soundBuffers[activeSoundSet] && !loadingProfiles.has(activeSoundSet)
+  );
 
   return {
     ok: true,
@@ -288,7 +295,8 @@ async function initAudio() {
       // Create AudioContext in suspended state (allowed without user gesture)
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       isAudioInitialized = true;
-      await activateSoundSet(currentSoundSet);
+      activateSoundSet(currentSoundSet);
+      await loadingProfiles.get(currentSoundSet)?.mappingsReady;
       console.log('Keyboard ASMR: Audio initialized successfully');
     } catch (error) {
       runtimeStats.audioInitFailureCount += 1;
@@ -383,38 +391,50 @@ async function loadSound(url) {
   }
 }
 
-async function buildProfileBuffers(soundSetId) {
+async function startProfileBufferLoad(soundSetId) {
   const profile = await profileLoader.loadBundledProfileById(soundSetId);
   if (!profile) {
     throw new Error(`Profile not found: ${soundSetId}`);
   }
 
   const keyMappings = await profileLoader.profileToLegacyFormat(profile);
-  return await loadPlaybackMappings(keyMappings, loadSound);
+  return startLoadingPlaybackMappings(keyMappings, loadSound);
 }
 
 async function loadProfileBuffers(soundSetId) {
   const resolvedSoundSet = resolveSoundSetId(soundSetId);
 
+  if (loadingProfiles.has(resolvedSoundSet)) {
+    return await loadingProfiles.get(resolvedSoundSet).buffersReady;
+  }
+
   if (soundBuffers[resolvedSoundSet]) {
     return soundBuffers[resolvedSoundSet];
   }
 
-  if (loadingProfiles.has(resolvedSoundSet)) {
-    return await loadingProfiles.get(resolvedSoundSet);
-  }
-
-  const loadPromise = buildProfileBuffers(resolvedSoundSet)
-    .then(profileBuffers => {
-      soundBuffers[resolvedSoundSet] = profileBuffers;
-      return profileBuffers;
+  const loadingSession = startProfileBufferLoad(resolvedSoundSet);
+  const mappingsReady = loadingSession
+    .then(({ mappings }) => {
+      soundBuffers[resolvedSoundSet] = mappings;
+      return mappings;
+    })
+    .catch(() => null);
+  const buffersReady = loadingSession
+    .then(async ({ buffersReady: pendingBuffers }) => {
+      const mappings = await mappingsReady;
+      await pendingBuffers;
+      return mappings;
+    })
+    .catch(error => {
+      delete soundBuffers[resolvedSoundSet];
+      throw error;
     })
     .finally(() => {
       loadingProfiles.delete(resolvedSoundSet);
     });
 
-  loadingProfiles.set(resolvedSoundSet, loadPromise);
-  return await loadPromise;
+  loadingProfiles.set(resolvedSoundSet, { mappingsReady, buffersReady });
+  return await buffersReady;
 }
 
 async function activateSoundSet(soundSetId) {
@@ -450,7 +470,10 @@ async function activateSoundSet(soundSetId) {
 async function playSound(playbackInfo, eventType = 'keydown') {
   const playbackSoundSet = activeSoundSet || currentSoundSet;
   const candidates = getPlaybackCandidates(playbackInfo);
-  const mapping = resolvePlaybackMapping(soundBuffers[playbackSoundSet], candidates, eventType);
+  const profileLoad = loadingProfiles.get(playbackSoundSet);
+  const profileMappings =
+    soundBuffers[playbackSoundSet] || (await profileLoad?.mappingsReady) || null;
+  const mapping = resolvePlaybackMapping(profileMappings, candidates, eventType);
 
   if (mapping.status === 'profile_unavailable') {
     recordError('profile_not_loaded', { profile: playbackSoundSet });

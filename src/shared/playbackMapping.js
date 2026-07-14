@@ -1,9 +1,10 @@
-export function createPlaybackMapping(buffer) {
+export function createPlaybackMapping(buffer = null) {
   return { buffer };
 }
 
-export async function loadPlaybackMappings(keyMappings, loadBuffer) {
+export function startLoadingPlaybackMappings(keyMappings, loadBuffer) {
   const profileMappings = {};
+  const declaredMappings = [];
 
   for (const [key, eventMappings] of Object.entries(keyMappings)) {
     profileMappings[key] = {};
@@ -14,14 +15,24 @@ export async function loadPlaybackMappings(keyMappings, loadBuffer) {
       if (path === null) {
         profileMappings[key][eventType] = null;
       } else if (path) {
-        profileMappings[key][eventType] = createPlaybackMapping(await loadBuffer(path));
+        const mapping = createPlaybackMapping();
+        profileMappings[key][eventType] = mapping;
+        declaredMappings.push({ mapping, path });
       } else {
         profileMappings[key][eventType] = undefined;
       }
     }
   }
 
-  return profileMappings;
+  const buffersReady = (async () => {
+    for (const { mapping, path } of declaredMappings) {
+      mapping.buffer = await loadBuffer(path);
+    }
+
+    return profileMappings;
+  })();
+
+  return { mappings: profileMappings, buffersReady };
 }
 
 export function resolvePlaybackMapping(profileMappings, candidates, eventType) {
